@@ -3,13 +3,16 @@
 const int PIN_TRIG = 18;
 const int PIN_ECHO = 19;
 
-const int PIN_RED_1   = 25;
-const int PIN_RED_2   = 26;
-const int PIN_GREEN_1 = 27;
-const int PIN_GREEN_2 = 32;
-const int PIN_BLUE_1  = 33;
-const int PIN_BLUE_2  = 23;
-const int PIN_LIGHT   = 13;
+const int PIN_RED_1     = 25;
+const int PIN_RED_2     = 26;
+const int PIN_GREEN_1   = 27;
+const int PIN_GREEN_2   = 32;
+const int PIN_GREEN_ALT = 14;
+const int PIN_BLUE_1    = 33;
+const int PIN_BLUE_2    = 23;
+const int PIN_BLUE_ALT  = 12;
+const int PIN_LIGHT     = 13;
+const int PIN_ONBOARD   = 2;
 bool lightState = false;
 
 const int PIN_BTN_ARM    = 16;
@@ -49,11 +52,13 @@ void setRedLeds(bool state) {
 void setGreenLeds(bool state) {
   digitalWrite(PIN_GREEN_1, state ? HIGH : LOW);
   digitalWrite(PIN_GREEN_2, state ? HIGH : LOW);
+  digitalWrite(PIN_GREEN_ALT, state ? HIGH : LOW);
 }
 
 void setBlueLeds(bool state) {
   digitalWrite(PIN_BLUE_1, state ? HIGH : LOW);
   digitalWrite(PIN_BLUE_2, state ? HIGH : LOW);
+  digitalWrite(PIN_BLUE_ALT, state ? HIGH : LOW);
 }
 
 void updateLedOutputs() {
@@ -61,10 +66,12 @@ void updateLedOutputs() {
     setRedLeds(true);
     setGreenLeds(false);
     setBlueLeds(false);
+    digitalWrite(PIN_ONBOARD, LOW);
   } else {
     setRedLeds(false);
     setGreenLeds(true);
     setBlueLeds(proximityAlertActive);
+    digitalWrite(PIN_ONBOARD, HIGH);
   }
 }
 
@@ -160,36 +167,53 @@ void runLedTest() {
   setRedLeds(false);
   setGreenLeds(false);
   setBlueLeds(false);
-  delay(200);
+  digitalWrite(PIN_LIGHT, LOW);
+  digitalWrite(PIN_ONBOARD, LOW);
+  delay(300);
 
   Serial.println("LED_TEST: RED 1 (GPIO 25) ON");
-  digitalWrite(PIN_RED_1, HIGH); delay(800); digitalWrite(PIN_RED_1, LOW); delay(150);
+  digitalWrite(PIN_RED_1, HIGH); delay(700); digitalWrite(PIN_RED_1, LOW); delay(150);
 
   Serial.println("LED_TEST: RED 2 (GPIO 26) ON");
-  digitalWrite(PIN_RED_2, HIGH); delay(800); digitalWrite(PIN_RED_2, LOW); delay(150);
+  digitalWrite(PIN_RED_2, HIGH); delay(700); digitalWrite(PIN_RED_2, LOW); delay(150);
 
-  Serial.println("LED_TEST: GREEN 1 (GPIO 27) ON");
-  digitalWrite(PIN_GREEN_1, HIGH); delay(800); digitalWrite(PIN_GREEN_1, LOW); delay(150);
+  Serial.println("LED_TEST: GREEN 1 (GPIO 27) & ALT (GPIO 14) ON");
+  digitalWrite(PIN_GREEN_1, HIGH); digitalWrite(PIN_GREEN_ALT, HIGH); delay(700);
+  digitalWrite(PIN_GREEN_1, LOW); digitalWrite(PIN_GREEN_ALT, LOW); delay(150);
 
   Serial.println("LED_TEST: GREEN 2 (GPIO 32) ON");
-  digitalWrite(PIN_GREEN_2, HIGH); delay(800); digitalWrite(PIN_GREEN_2, LOW); delay(150);
+  digitalWrite(PIN_GREEN_2, HIGH); delay(700); digitalWrite(PIN_GREEN_2, LOW); delay(150);
 
-  Serial.println("LED_TEST: BLUE 1 (GPIO 33) ON");
-  digitalWrite(PIN_BLUE_1, HIGH); delay(800); digitalWrite(PIN_BLUE_1, LOW); delay(150);
+  Serial.println("LED_TEST: BLUE 1 (GPIO 33) & ALT (GPIO 12) ON");
+  digitalWrite(PIN_BLUE_1, HIGH); digitalWrite(PIN_BLUE_ALT, HIGH); delay(700);
+  digitalWrite(PIN_BLUE_1, LOW); digitalWrite(PIN_BLUE_ALT, LOW); delay(150);
 
   Serial.println("LED_TEST: BLUE 2 (GPIO 23) ON");
-  digitalWrite(PIN_BLUE_2, HIGH); delay(800); digitalWrite(PIN_BLUE_2, LOW); delay(200);
+  digitalWrite(PIN_BLUE_2, HIGH); delay(700); digitalWrite(PIN_BLUE_2, LOW); delay(200);
 
   Serial.println("LED_TEST: WHITE AUTOMATION (GPIO 13) ON");
-  digitalWrite(PIN_LIGHT, HIGH); delay(800); digitalWrite(PIN_LIGHT, LOW); delay(150);
+  digitalWrite(PIN_LIGHT, HIGH); delay(700); digitalWrite(PIN_LIGHT, LOW); delay(150);
+
+  Serial.println("LED_TEST: ONBOARD ESP32 BLUE LED (GPIO 2) ON");
+  digitalWrite(PIN_ONBOARD, HIGH); delay(700); digitalWrite(PIN_ONBOARD, LOW); delay(150);
 
   Serial.println("LED_TEST: ALL LEDS ON");
-  setRedLeds(true); setGreenLeds(true); setBlueLeds(true); digitalWrite(PIN_LIGHT, HIGH);
-  delay(1200);
-  digitalWrite(PIN_LIGHT, lightState ? HIGH : LOW);
+  setRedLeds(true); setGreenLeds(true); setBlueLeds(true);
+  digitalWrite(PIN_LIGHT, HIGH);
+  digitalWrite(PIN_ONBOARD, HIGH);
+  delay(1500);
 
+  digitalWrite(PIN_LIGHT, lightState ? HIGH : LOW);
   updateLedOutputs();
   Serial.println(">>> LED IGNITION SWEEP COMPLETE <<<");
+}
+
+void setAllLeds(bool state) {
+  setRedLeds(state);
+  setGreenLeds(state);
+  setBlueLeds(state);
+  digitalWrite(PIN_LIGHT, state ? HIGH : LOW);
+  digitalWrite(PIN_ONBOARD, state ? HIGH : LOW);
 }
 
 void runFullDiagnostic() {
@@ -236,10 +260,15 @@ void setup() {
   pinMode(PIN_RED_2, OUTPUT);
   pinMode(PIN_GREEN_1, OUTPUT);
   pinMode(PIN_GREEN_2, OUTPUT);
+  pinMode(PIN_GREEN_ALT, OUTPUT);
   pinMode(PIN_BLUE_1, OUTPUT);
   pinMode(PIN_BLUE_2, OUTPUT);
+  pinMode(PIN_BLUE_ALT, OUTPUT);
   pinMode(PIN_LIGHT, OUTPUT);
+  pinMode(PIN_ONBOARD, OUTPUT);
+
   digitalWrite(PIN_LIGHT, LOW);
+  digitalWrite(PIN_ONBOARD, LOW);
 
   pinMode(PIN_BTN_ARM, INPUT_PULLUP);
   pinMode(PIN_BTN_DISARM, INPUT_PULLUP);
@@ -269,10 +298,10 @@ void setup() {
   Serial.print("PIN_BTN_DISARM (D17) Level: ");
   Serial.println(initDisarmPin == LOW ? "LOW (WARNING: SHORTED)" : "HIGH (OK)");
 
-  int initLeds[] = {PIN_RED_1, PIN_RED_2, PIN_GREEN_1, PIN_GREEN_2, PIN_BLUE_1, PIN_BLUE_2};
-  for (int i = 0; i < 6; i++) {
+  int initLeds[] = {PIN_RED_1, PIN_RED_2, PIN_GREEN_1, PIN_GREEN_ALT, PIN_GREEN_2, PIN_BLUE_1, PIN_BLUE_ALT, PIN_BLUE_2, PIN_LIGHT, PIN_ONBOARD};
+  for (int i = 0; i < 10; i++) {
     digitalWrite(initLeds[i], HIGH);
-    delay(100);
+    delay(80);
     digitalWrite(initLeds[i], LOW);
   }
 
@@ -325,19 +354,22 @@ void loop() {
   while (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
-    if (cmd == "CMD: ARM" || cmd == "ARM") {
+    String upperCmd = cmd;
+    upperCmd.toUpperCase();
+
+    if (upperCmd == "CMD: ARM" || upperCmd == "ARM") {
       transitionToArmed("SERIAL_CMD");
-    } else if (cmd == "CMD: DISARM" || cmd == "DISARM") {
+    } else if (upperCmd == "CMD: DISARM" || upperCmd == "DISARM") {
       transitionToDisarmed("SERIAL_CMD");
-    } else if (cmd == "CMD: LIGHT: ON" || cmd == "LIGHT: ON" || cmd == "CMD: LIGHT ON" || cmd == "LIGHT ON" || cmd == "LIGHT_ON") {
+    } else if (upperCmd == "CMD: LIGHT: ON" || upperCmd == "LIGHT: ON" || upperCmd == "CMD: LIGHT ON" || upperCmd == "LIGHT ON" || upperCmd == "LIGHT_ON") {
       digitalWrite(PIN_LIGHT, HIGH);
       lightState = true;
       Serial.println("DEVICE: LIGHT: ON");
-    } else if (cmd == "CMD: LIGHT: OFF" || cmd == "LIGHT: OFF" || cmd == "CMD: LIGHT OFF" || cmd == "LIGHT OFF" || cmd == "LIGHT_OFF") {
+    } else if (upperCmd == "CMD: LIGHT: OFF" || upperCmd == "LIGHT: OFF" || upperCmd == "CMD: LIGHT OFF" || upperCmd == "LIGHT OFF" || upperCmd == "LIGHT_OFF") {
       digitalWrite(PIN_LIGHT, LOW);
       lightState = false;
       Serial.println("DEVICE: LIGHT: OFF");
-    } else if (cmd == "CMD: LIGHT: TOGGLE" || cmd == "LIGHT: TOGGLE" || cmd == "CMD: LIGHT TOGGLE" || cmd == "LIGHT TOGGLE" || cmd == "TOGGLE_LIGHT" || cmd == "CMD: TOGGLE") {
+    } else if (upperCmd == "CMD: LIGHT: TOGGLE" || upperCmd == "LIGHT: TOGGLE" || upperCmd == "CMD: LIGHT TOGGLE" || upperCmd == "LIGHT TOGGLE" || upperCmd == "TOGGLE_LIGHT" || upperCmd == "CMD: TOGGLE") {
       lightState = !lightState;
       digitalWrite(PIN_LIGHT, lightState ? HIGH : LOW);
       if (lightState) {
@@ -345,7 +377,7 @@ void loop() {
       } else {
         Serial.println("DEVICE: LIGHT: OFF");
       }
-    } else if (cmd == "CMD: STATUS" || cmd == "STATUS") {
+    } else if (upperCmd == "CMD: STATUS" || upperCmd == "STATUS") {
       if (currentState == STATE_ARMED) {
         Serial.println("SYSTEM: ARMED");
       } else {
@@ -356,9 +388,16 @@ void loop() {
       } else {
         Serial.println("DEVICE: LIGHT: OFF");
       }
-    } else if (cmd == "CMD: TEST_LEDS" || cmd == "CMD: LED_TEST" || cmd == "TEST_LEDS" || cmd == "TEST") {
+    } else if (upperCmd == "CMD: TEST_LEDS" || upperCmd == "CMD: LED_TEST" || upperCmd == "TEST_LEDS" || upperCmd == "TEST") {
       runLedTest();
-    } else if (cmd == "CMD: DIAG" || cmd == "CMD: DIAGNOSTIC" || cmd == "DIAG") {
+    } else if (upperCmd == "CMD: ALL_ON" || upperCmd == "CMD: ALL: ON" || upperCmd == "ALL_ON" || upperCmd == "ALL ON") {
+      setAllLeds(true);
+      Serial.println("DEVICE: ALL_LEDS: ON");
+    } else if (upperCmd == "CMD: ALL_OFF" || upperCmd == "CMD: ALL: OFF" || upperCmd == "ALL_OFF" || upperCmd == "ALL OFF") {
+      setAllLeds(false);
+      updateLedOutputs();
+      Serial.println("DEVICE: ALL_LEDS: OFF");
+    } else if (upperCmd == "CMD: DIAG" || upperCmd == "CMD: DIAGNOSTIC" || upperCmd == "DIAG") {
       runFullDiagnostic();
     }
   }

@@ -734,7 +734,7 @@ def main():
                 cv2.putText(frame, lbl, (mini_x + 6, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.26, (200, 210, 220) if lit else (100, 110, 120), 1, cv2.LINE_AA)
                 mini_x += 38
 
-            cv2.putText(frame, 'BTNS: D16(ARM) | D17(DISARM) | D13(LIGHT)', (325, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.26, (160, 175, 190), 1, cv2.LINE_AA)
+            cv2.putText(frame, 'KEYS: [A] ARM | [D] DISARM | [L] LIGHT | [X] TEST', (285, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.26, (160, 175, 190), 1, cv2.LINE_AA)
 
             if hw.proximity_alert:
                 cv2.rectangle(frame, (2, 30), (cam_w - 2, 508), (0, 60, 255), 3)
@@ -898,6 +898,12 @@ def main():
                 last_action_time = current_time
                 last_action_color = (0, 60, 255)
                 sensor_log.append((time.strftime('%H:%M:%S'), 'CMD: DISARM SENT', (0, 60, 255)))
+            elif key in (ord('x'), ord('X')):
+                esp32.test_leds()
+                last_action_text = 'CMD: TEST LEDS'
+                last_action_time = current_time
+                last_action_color = (0, 240, 255)
+                sensor_log.append((time.strftime('%H:%M:%S'), 'CMD: TEST LEDS', (0, 240, 255)))
     finally:
         speech_engine.stop()
         esp32.stop()
