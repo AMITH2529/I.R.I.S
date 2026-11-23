@@ -83,6 +83,7 @@ python test_hardware_interactive.py
 | `T` | **Toggle Cyber-Glass Telemetry Sidebar** |
 | `A` | **Hardware ARM** (sends `CMD: ARM` to ESP32 DevKit V1) |
 | `D` | **Hardware DISARM** (sends `CMD: DISARM` to ESP32 DevKit V1) |
+| `L` | **Toggle Eye-Controlled Automation Light** (GPIO 13) |
 | `ESC` | Exit application cleanly |
 
 ---
@@ -96,4 +97,4 @@ For an in-depth breakdown of how the software pipeline and hardware components o
 ```powershell
 python -m unittest test_suite.py test_hardware.py
 ```
-* 24 comprehensive automated tests verifying signal filtering, soft deadzones, lighting compensation, asymmetry winks, solvePnP pose, iris detection, pointer navigation modes, dwell clicking, 5-point calibration, temporal tracking throughput, left wink left-click, right wink right-click, long blink double-click, mouth open head tilt scrolling, two-stage blink click, voluntary blink-and-release, instant baseline recalibration, and ESP32 hardware packet parsing & telemetry.
+* 26 comprehensive automated tests verifying signal filtering, soft deadzones, lighting compensation, asymmetry winks, solvePnP pose, iris detection, pointer navigation modes, dwell clicking, 5-point calibration, temporal tracking throughput, left wink left-click, right wink right-click, long blink double-click, mouth open head tilt scrolling, two-stage blink click, voluntary blink-and-release, instant baseline recalibration, ESP32 hardware packet parsing & telemetry, eye-controlled light automation on GPIO 13, and adaptive dwell failsafe safeguards.

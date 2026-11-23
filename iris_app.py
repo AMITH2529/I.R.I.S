@@ -6,6 +6,7 @@ import queue
 from typing import Tuple, Optional, Dict, Any, List
 import cv2
 import numpy as np
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from iris_engine.camera import ThreadedWebcamStream
 from iris_engine.preprocessor import LightingCompensator
@@ -19,6 +20,7 @@ from iris_engine.controller import WindowsCursorController
 from iris_engine.hardware import ESP32Controller, HardwareState
 from iris_engine.audio_feedback import AudioFeedbackEngine
 from iris_engine.speech_controller import SpeechControlEngine
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 YUNET_PATH = os.path.join(BASE_DIR, 'models', 'face_detection_yunet.onnx')
 FACEMESH_PATH = os.path.join(BASE_DIR, 'models', 'FaceMesh.onnx')
@@ -56,6 +58,7 @@ def render_cyber_dashboard(panel: np.ndarray, nav: PointerNavigationEngine, gest
     else:
         st_text, st_col = ('ONLINE', (0, 255, 120))
     cv2.putText(panel, st_text, (pw - 110, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.33, st_col, 1, cv2.LINE_AA)
+
     cv2.rectangle(panel, (10, 44), (pw - 10, 108), (18, 23, 33), -1)
     cv2.rectangle(panel, (10, 44), (pw - 10, 108), (35, 46, 64), 1)
     cv2.putText(panel, 'NAVIGATION & MODES', (18, 59), cv2.FONT_HERSHEY_DUPLEX, 0.33, (255, 255, 255), 1, cv2.LINE_AA)
@@ -83,6 +86,7 @@ def render_cyber_dashboard(panel: np.ndarray, nav: PointerNavigationEngine, gest
     cv2.rectangle(panel, (160, 98), (160 + bar_w, 104), (32, 38, 48), -1)
     cv2.rectangle(panel, (160, 98), (160 + int(bar_w * sens_pct), 104), (0, 240, 255), -1)
     cv2.rectangle(panel, (160, 98), (160 + bar_w, 104), (55, 65, 80), 1)
+
     cv2.rectangle(panel, (10, 114), (pw - 10, 186), (18, 23, 33), -1)
     cv2.rectangle(panel, (10, 114), (pw - 10, 186), (35, 46, 64), 1)
     cv2.putText(panel, 'BIOMETRIC EYE & MOUTH', (18, 129), cv2.FONT_HERSHEY_DUPLEX, 0.33, (255, 255, 255), 1, cv2.LINE_AA)
@@ -109,56 +113,80 @@ def render_cyber_dashboard(panel: np.ndarray, nav: PointerNavigationEngine, gest
     else:
         sub_str, sub_col = ('Blink/Release [B] | Wink | Dwell [W]', (0, 240, 255))
     cv2.putText(panel, sub_str, (18, 181), cv2.FONT_HERSHEY_SIMPLEX, 0.28, sub_col, 1, cv2.LINE_AA)
+
     cv2.rectangle(panel, (10, 192), (pw - 10, 362), (18, 23, 33), -1)
     cv2.rectangle(panel, (10, 192), (pw - 10, 362), (35, 46, 64), 1)
-    cv2.putText(panel, 'HARDWARE STATUS & SENSORS', (18, 206), cv2.FONT_HERSHEY_DUPLEX, 0.33, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(panel, 'HARDWARE & HOME AUTOMATION', (18, 206), cv2.FONT_HERSHEY_DUPLEX, 0.33, (255, 255, 255), 1, cv2.LINE_AA)
     hw_conn_badge = f'[{hw.port}] ONLINE' if hw.is_connected else '[COM5] OFFLINE'
     hw_conn_col = (0, 255, 120) if hw.is_connected else (100, 110, 130)
     cv2.putText(panel, hw_conn_badge, (pw - 105, 206), cv2.FONT_HERSHEY_SIMPLEX, 0.3, hw_conn_col, 1, cv2.LINE_AA)
     state_col = (0, 255, 120) if hw.state == HardwareState.ARMED else (0, 60, 255) if hw.state == HardwareState.DISARMED else (120, 130, 140)
-    cv2.putText(panel, f'State: [{hw.state.value}]  ([A] Arm / [D] Disarm)', (18, 222), cv2.FONT_HERSHEY_SIMPLEX, 0.32, state_col, 1, cv2.LINE_AA)
+    cv2.putText(panel, f'State: [{hw.state.value}]  ([A] Arm / [D] Disarm)', (18, 221), cv2.FONT_HERSHEY_SIMPLEX, 0.31, state_col, 1, cv2.LINE_AA)
+
     is_disarmed = hw.state == HardwareState.DISARMED
     is_armed = hw.state == HardwareState.ARMED
     is_prox = hw.proximity_alert and is_armed
     r1_on, r2_on = (is_disarmed, is_disarmed)
     g1_on, g2_on = (is_armed, is_armed)
     b1_on, b2_on = (is_prox, is_prox)
-    cv2.putText(panel, 'LEDs:', (18, 238), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (180, 195, 210), 1, cv2.LINE_AA)
-    led_defs = [('R1:25', r1_on, (0, 0, 255), (35, 35, 80)), ('R2:26', r2_on, (0, 0, 255), (35, 35, 80)), ('G1:27', g1_on, (0, 255, 120), (25, 60, 35)), ('G2:32', g2_on, (0, 255, 120), (25, 60, 35)), ('B1:33', b1_on, (255, 180, 0), (60, 45, 25)), ('B2:23', b2_on, (255, 180, 0), (60, 45, 25))]
-    led_x = 56
+    cv2.putText(panel, 'LEDs:', (18, 236), cv2.FONT_HERSHEY_SIMPLEX, 0.29, (180, 195, 210), 1, cv2.LINE_AA)
+    led_defs = [
+        ('R1:25', r1_on, (0, 0, 255), (35, 35, 80)),
+        ('R2:26', r2_on, (0, 0, 255), (35, 35, 80)),
+        ('G1:27', g1_on, (0, 255, 120), (25, 60, 35)),
+        ('G2:32', g2_on, (0, 255, 120), (25, 60, 35)),
+        ('B1:33', b1_on, (255, 180, 0), (60, 45, 25)),
+        ('B2:23', b2_on, (255, 180, 0), (60, 45, 25)),
+        ('WL:13', hw.light_state, (255, 255, 255), (45, 45, 55))
+    ]
+    led_x = 52
     for label, is_on, on_color, off_color in led_defs:
         dot_col = on_color if is_on else off_color
-        cv2.circle(panel, (led_x, 235), 4, dot_col, -1, cv2.LINE_AA)
+        cv2.circle(panel, (led_x, 234), 4, dot_col, -1, cv2.LINE_AA)
         if is_on:
-            cv2.circle(panel, (led_x, 235), 6, on_color, 1, cv2.LINE_AA)
-        cv2.putText(panel, label, (led_x - 14, 250), cv2.FONT_HERSHEY_SIMPLEX, 0.26, dot_col if is_on else (120, 130, 140), 1, cv2.LINE_AA)
-        led_x += 44
-    cv2.putText(panel, 'Buttons: ARM (GPIO 16) | DISARM (GPIO 17)', (18, 265), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (180, 195, 210), 1, cv2.LINE_AA)
+            cv2.circle(panel, (led_x, 234), 6, on_color, 1, cv2.LINE_AA)
+        cv2.putText(panel, label, (led_x - 14, 248), cv2.FONT_HERSHEY_SIMPLEX, 0.24, dot_col if is_on else (120, 130, 140), 1, cv2.LINE_AA)
+        led_x += 42
+
+    light_box_y = 254
+    cv2.rectangle(panel, (18, light_box_y), (pw - 18, light_box_y + 30), (22, 28, 40), -1)
+    cv2.rectangle(panel, (18, light_box_y), (pw - 18, light_box_y + 30), (45, 60, 85), 1)
+    lt_status_col = (255, 255, 255) if hw.light_state else (120, 130, 145)
+    lt_status_txt = 'LIGHT: ON (GPIO 13)' if hw.light_state else 'LIGHT: OFF (GPIO 13)'
+    cv2.putText(panel, lt_status_txt, (26, light_box_y + 19), cv2.FONT_HERSHEY_SIMPLEX, 0.31, lt_status_col, 1, cv2.LINE_AA)
+    btn_on_c = (0, 255, 120) if hw.light_state else (75, 85, 100)
+    btn_off_c = (0, 60, 255) if not hw.light_state else (75, 85, 100)
+    cv2.putText(panel, '[ON (L)]', (215, light_box_y + 19), cv2.FONT_HERSHEY_SIMPLEX, 0.3, btn_on_c, 1, cv2.LINE_AA)
+    cv2.putText(panel, '[OFF (O)]', (278, light_box_y + 19), cv2.FONT_HERSHEY_SIMPLEX, 0.3, btn_off_c, 1, cv2.LINE_AA)
+
     dist_val = hw.distance_cm
     dist_valid = 0.5 < dist_val < 450.0
     dist_str = f'{dist_val:.1f} cm' if dist_valid else '--'
     dist_col = (0, 60, 255) if hw.proximity_alert else (0, 240, 255) if dist_valid else (140, 150, 160)
-    cv2.putText(panel, f'HC-SR04 Radar (D18/D19): {dist_str}', (18, 283), cv2.FONT_HERSHEY_SIMPLEX, 0.31, dist_col, 1, cv2.LINE_AA)
-    cv2.rectangle(panel, (18, 290), (pw - 20, 298), (32, 38, 48), -1)
+    cv2.putText(panel, f'HC-SR04 Radar (D18/D19): {dist_str}', (18, 298), cv2.FONT_HERSHEY_SIMPLEX, 0.3, dist_col, 1, cv2.LINE_AA)
+    cv2.rectangle(panel, (18, 304), (pw - 20, 311), (32, 38, 48), -1)
     if dist_valid:
         gauge_pct = min(1.0, max(0.0, dist_val / 100.0))
         gw = int((pw - 38) * gauge_pct)
         g_col = (0, 60, 255) if dist_val < 30.0 else (0, 220, 255) if dist_val < 60.0 else (0, 255, 120)
-        cv2.rectangle(panel, (18, 290), (18 + gw, 298), g_col, -1)
+        cv2.rectangle(panel, (18, 304), (18 + gw, 311), g_col, -1)
     thresh_x = int(18 + (pw - 38) * (30.0 / 100.0))
-    cv2.line(panel, (thresh_x, 288), (thresh_x, 300), (0, 60, 255), 2)
-    cv2.rectangle(panel, (18, 290), (pw - 20, 298), (55, 65, 80), 1)
-    if hw.proximity_alert:
-        cv2.putText(panel, '[PROXIMITY ALERT: OBJECT < 30 CM!]', (18, 312), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 60, 255), 1, cv2.LINE_AA)
-    else:
-        cv2.putText(panel, '[Proximity Zone: Clear (> 30 cm)]', (18, 312), cv2.FONT_HERSHEY_SIMPLEX, 0.29, (120, 135, 150), 1, cv2.LINE_AA)
+    cv2.line(panel, (thresh_x, 302), (thresh_x, 313), (0, 60, 255), 2)
+    cv2.rectangle(panel, (18, 304), (pw - 20, 311), (55, 65, 80), 1)
+
     ax, ay, az = hw.motion_values
     mag = math.sqrt(ax * ax + ay * ay + az * az)
     mot_col = (0, 80, 255) if hw.motion_alert else (0, 255, 120)
-    mot_str = '[MOTION DETECTED!]' if hw.motion_alert else '[STABLE]'
-    cv2.putText(panel, f'MPU-6050 6-Axis (D21/D22):', (18, 329), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (180, 195, 210), 1, cv2.LINE_AA)
-    cv2.putText(panel, f'AX:{ax:+.2f}g  AY:{ay:+.2f}g  AZ:{az:+.2f}g', (18, 343), cv2.FONT_HERSHEY_SIMPLEX, 0.29, (200, 215, 230), 1, cv2.LINE_AA)
-    cv2.putText(panel, f'Motion: {mot_str} | Mag: {mag:.2f}g', (18, 356), cv2.FONT_HERSHEY_SIMPLEX, 0.29, mot_col, 1, cv2.LINE_AA)
+    mot_str = '[MOTION!]' if hw.motion_alert else '[STABLE]'
+    cv2.putText(panel, f'MPU-6050: AX:{ax:+.2f} AY:{ay:+.2f} AZ:{az:+.2f} {mot_str}', (18, 327), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (190, 205, 220), 1, cv2.LINE_AA)
+
+    top_cmds = nav.get_top_commands(3)
+    if top_cmds:
+        top_str = ' | '.join([f'{k}:{v}' for k, v in top_cmds])
+        cv2.putText(panel, f'Top Intent: {top_str}', (18, 344), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (0, 240, 255), 1, cv2.LINE_AA)
+    else:
+        cv2.putText(panel, 'Adaptive Interaction: Gaze Velocity Tuned', (18, 344), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (130, 145, 160), 1, cv2.LINE_AA)
+
     cv2.rectangle(panel, (10, 368), (pw - 10, 508), (18, 23, 33), -1)
     cv2.rectangle(panel, (10, 368), (pw - 10, 508), (35, 46, 64), 1)
     cv2.putText(panel, 'HARDWARE & SENSOR ACTIVITY LOG', (18, 384), cv2.FONT_HERSHEY_DUPLEX, 0.33, (255, 255, 255), 1, cv2.LINE_AA)
@@ -166,25 +194,27 @@ def render_cyber_dashboard(panel: np.ndarray, nav: PointerNavigationEngine, gest
     for t_str, act_text, col in sensor_log[-6:]:
         cv2.putText(panel, f'{t_str} -> {act_text}', (18, log_y), cv2.FONT_HERSHEY_SIMPLEX, 0.29, col, 1, cv2.LINE_AA)
         log_y += 17
-    cv2.putText(panel, '[SPACE] Pause | [C] Center | [V] Voice | [K] Calib | [W] Dwell', (10, 526), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (130, 145, 160), 1, cv2.LINE_AA)
+    cv2.putText(panel, '[SPACE] Pause | [C] Center | [L] Light | [V] Voice | [K] Calib', (10, 526), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (130, 145, 160), 1, cv2.LINE_AA)
 
 def main():
     print('=' * 72)
     print('  I.R.I.S. (Intelligent Real-time Interface System) v2.5')
-    print('  Ultra-Fast, Zero-Jitter Neural HCI & Assistive Controller')
+    print('  Neural Assistive Controller with Home Automation & Voice Assistant')
     print('=' * 72)
     controller = WindowsCursorController(enable_sound=False)
     audio = AudioFeedbackEngine(enable_chimes=True, enable_speech=True)
     screen_w, screen_h = controller.get_screen_size()
     print(f'[INFO] Display Resolution: {screen_w} x {screen_h}')
-    speech_queue: queue.Queue = queue.Queue()
 
+    speech_queue: queue.Queue = queue.Queue()
     def on_speech_command(action_name: str, action_data: Dict[str, Any]) -> None:
         speech_queue.put((action_name, action_data))
+
     speech_engine = SpeechControlEngine(command_callback=on_speech_command)
     speech_enabled = speech_engine.start()
     if speech_enabled:
         audio.speak('I.R.I.S. Assistive Suite Online')
+
     lighting = LightingCompensator(clip_limit=2.0, tile_grid_size=(8, 8))
     pose_estimator = HeadPoseEstimator()
     iris_detector = IrisGazeDetector()
@@ -195,10 +225,12 @@ def main():
     tracker = FastFaceMeshTracker(model_yunet_path=YUNET_PATH, model_facemesh_path=FACEMESH_PATH, input_size=(640, 480), redetect_interval=90)
     camera = ThreadedWebcamStream(src=0, width=640, height=480, fps=30).start()
     time.sleep(0.4)
+
     if not camera.stream.isOpened() or camera.read() is None:
         print('[ERROR] Camera could not be opened. Please verify your webcam is connected and not in use.')
         camera.stop()
         return
+
     window_name = 'I.R.I.S. - Controller & Neural HUD'
     cam_w, cam_h = (640, 540)
     sidebar_w = 370
@@ -206,6 +238,7 @@ def main():
     total_h = cam_h
     center_wx = max(0, int((screen_w - total_w) / 2))
     center_wy = max(0, int((screen_h - total_h) / 2) - 40)
+
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(window_name, total_w, total_h)
     cv2.moveWindow(window_name, center_wx, center_wy)
@@ -213,6 +246,19 @@ def main():
         cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
     except Exception:
         pass
+
+    def on_mouse_event(event, mx, my, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            if 450 <= mx <= 535 and 470 <= my <= 502:
+                esp32.set_light(True)
+                audio.light_turned_on()
+                nav_engine.record_command('light_on')
+            elif 545 <= mx <= 630 and 470 <= my <= 502:
+                esp32.set_light(False)
+                audio.light_turned_off()
+                nav_engine.record_command('light_off')
+    cv2.setMouseCallback(window_name, on_mouse_event)
+
     t_start = time.time()
     laser_filter = OneEuroFilter2D(t_start, 320.0, 240.0, min_cutoff=0.008, beta=0.006, d_cutoff=1.0)
     neutral_initialized = False
@@ -226,12 +272,20 @@ def main():
     last_action_text = ''
     last_action_time = 0.0
     last_action_color = (0, 255, 120)
-    sensor_log: List[Tuple[str, str, Tuple[int, int, int]]] = [(time.strftime('%H:%M:%S'), 'SYSTEM INITIALIZED', (0, 240, 255)), (time.strftime('%H:%M:%S'), 'ESP32 CONTROLLER CONNECTED', (0, 255, 120))]
+    sensor_log: List[Tuple[str, str, Tuple[int, int, int]]] = [
+        (time.strftime('%H:%M:%S'), 'SYSTEM INITIALIZED', (0, 240, 255)),
+        (time.strftime('%H:%M:%S'), 'ESP32 CONTROLLER CONNECTED', (0, 255, 120))
+    ]
     ripples: List[Dict[str, Any]] = []
     frame_times: List[float] = []
     fps = 30.0
+
+    face_lost_start = 0.0
+    face_lost_notified = False
+
     print('[READY] I.R.I.S. Engine Online.')
-    print('        Controls: [SPACE] Pause | [C] Recenter | [P] Sniper | [W] Dwell | [M] Mode | [T] Sidebar | [ESC] Exit\n')
+    print('        Controls: [SPACE] Pause | [C] Recenter | [L] Light Toggle | [W] Dwell | [M] Mode | [T] Sidebar | [ESC] Exit\n')
+
     try:
         while True:
             try:
@@ -240,15 +294,18 @@ def main():
                     break
             except Exception:
                 pass
+
             t_frame_start = time.time()
             raw_cam_frame = camera.read()
             if raw_cam_frame is None:
                 time.sleep(0.005)
                 continue
+
             raw_cam_frame = cv2.flip(raw_cam_frame, 1)
             frame = np.zeros((cam_h, cam_w, 3), dtype=np.uint8)
             frame[30:510, 0:640] = raw_cam_frame
             img_h, img_w, _ = (480, 640, 3)
+
             rgb_image = lighting.process(raw_cam_frame)
             landmarks = tracker.detect_and_track(rgb_image)
             current_time = time.time()
@@ -257,6 +314,21 @@ def main():
             hold_progress = 0.0
             pitch, yaw, roll = (0.0, 0.0, 0.0)
             has_face = landmarks is not None
+
+            if has_face:
+                if face_lost_notified:
+                    audio.tracking_recovered()
+                    face_lost_notified = False
+                    nav_engine.clear_failsafe()
+                face_lost_start = 0.0
+            else:
+                if face_lost_start == 0.0:
+                    face_lost_start = current_time
+                elif current_time - face_lost_start > 1.2 and not face_lost_notified:
+                    audio.tracking_lost_alert()
+                    face_lost_notified = True
+                    nav_engine.trigger_failsafe()
+
             while not speech_queue.empty():
                 s_act, s_data = speech_queue.get_nowait()
                 s_resp = s_data.get('verbal_response', '')
@@ -267,27 +339,52 @@ def main():
                 sensor_log.append((time.strftime('%H:%M:%S'), f'VOICE: {s_raw.upper()}', (0, 240, 255)))
                 if len(sensor_log) > 12:
                     sensor_log.pop(0)
+
                 if s_act == 'left_click':
                     controller.left_click()
                     audio.left_click()
+                    nav_engine.record_command('left_click')
                     click_suppress_until = current_time + 0.05
                     ripples.append({'x': int(anchor_x), 'y': int(anchor_y) + 30, 'start': current_time, 'color': (0, 255, 120)})
                 elif s_act == 'right_click':
                     controller.right_click()
                     audio.right_click()
+                    nav_engine.record_command('right_click')
                     click_suppress_until = current_time + 0.05
                     ripples.append({'x': int(anchor_x), 'y': int(anchor_y) + 30, 'start': current_time, 'color': (0, 220, 255)})
                 elif s_act == 'double_click':
                     controller.double_click()
                     audio.double_click()
+                    nav_engine.record_command('double_click')
                     click_suppress_until = current_time + 0.05
                     ripples.append({'x': int(anchor_x), 'y': int(anchor_y) + 30, 'start': current_time, 'color': (255, 100, 255)})
                 elif s_act == 'scroll_up':
                     controller.scroll(6)
                     audio.scroll_up()
+                    nav_engine.record_command('scroll_up')
                 elif s_act == 'scroll_down':
                     controller.scroll(-6)
                     audio.scroll_down()
+                    nav_engine.record_command('scroll_down')
+                elif s_act == 'light_on':
+                    esp32.set_light(True)
+                    audio.light_turned_on()
+                    nav_engine.record_command('light_on')
+                elif s_act == 'light_off':
+                    esp32.set_light(False)
+                    audio.light_turned_off()
+                    nav_engine.record_command('light_off')
+                elif s_act == 'toggle_light':
+                    esp32.toggle_light()
+                    nav_engine.record_command('toggle_light')
+                elif s_act == 'fan_on':
+                    audio.fan_turned_on()
+                    nav_engine.record_command('fan_on')
+                elif s_act == 'fan_off':
+                    audio.fan_turned_off()
+                    nav_engine.record_command('fan_off')
+                elif s_act == 'voice_error':
+                    audio.voice_error('Command not recognized')
                 elif s_act == 'recenter':
                     nav_engine.recenter((anchor_x, anchor_y))
                     laser_filter.reset(current_time, anchor_x, anchor_y)
@@ -333,6 +430,7 @@ def main():
                     audio.voice_command_recognized('test_leds', s_resp or 'Testing LEDs')
                 else:
                     audio.voice_command_recognized(s_act, s_resp)
+
             if has_face:
                 cranial_raw_x = float((landmarks[168][0] + landmarks[6][0] + landmarks[197][0]) / 3.0)
                 cranial_raw_y = float((landmarks[168][1] + landmarks[6][1] + landmarks[197][1]) / 3.0)
@@ -340,19 +438,50 @@ def main():
                 if not neutral_initialized:
                     nav_engine.recenter((anchor_x, anchor_y))
                     neutral_initialized = True
+
                 success, proj, rvec, tvec = pose_estimator.estimate_pose(landmarks, img_w, img_h)
                 if success and rvec is not None:
                     pitch, yaw, roll = pose_estimator.get_euler_angles(rvec)
+
                 gaze_data = iris_detector.estimate_iris_gaze(raw_cam_frame, landmarks, is_blinking=False)
                 gaze_offset = (gaze_data.get('gaze_offset_x', 0.0), gaze_data.get('gaze_offset_y', 0.0))
                 gestures = gesture_engine.process_frame(landmarks, current_time, pitch_angle=pitch, tilt_y=0.0, is_mirrored=True)
                 hold_progress = gestures.get('hold_progress', 0.0)
                 trigger = gestures.get('trigger_action')
+
                 action_fired = False
+                target_screen_x, target_screen_y, dwell_action = nav_engine.update(laser_pt=(anchor_x, anchor_y), euler_angles=(pitch, yaw, roll), gaze_offset=gaze_offset, current_time=current_time)
+
+                def check_light_button_hit(tx: float, ty: float) -> Optional[bool]:
+                    rel_btn_x = tx - center_wx
+                    rel_btn_y = ty - center_wy
+                    if 450 <= rel_btn_x <= 535 and 470 <= rel_btn_y <= 502:
+                        return True
+                    elif 545 <= rel_btn_x <= 630 and 470 <= rel_btn_y <= 502:
+                        return False
+                    return None
+
                 if not is_paused and trigger is not None:
-                    if trigger == 'left_click':
+                    light_hit = check_light_button_hit(target_screen_x, target_screen_y)
+                    if light_hit is not None:
+                        if light_hit:
+                            esp32.set_light(True)
+                            audio.light_turned_on()
+                            nav_engine.record_command('light_on')
+                            last_action_text = 'EYE CLICK: LIGHT ON'
+                            last_action_color = (255, 255, 255)
+                        else:
+                            esp32.set_light(False)
+                            audio.light_turned_off()
+                            nav_engine.record_command('light_off')
+                            last_action_text = 'EYE CLICK: LIGHT OFF'
+                            last_action_color = (180, 180, 180)
+                        last_action_time = current_time
+                        action_fired = True
+                    elif trigger == 'left_click':
                         controller.left_click()
                         audio.left_click()
+                        nav_engine.record_command('left_click')
                         last_action_text = 'LEFT CLICK!'
                         last_action_time = current_time
                         last_action_color = (0, 255, 120)
@@ -361,6 +490,7 @@ def main():
                     elif trigger == 'right_click':
                         controller.right_click()
                         audio.right_click()
+                        nav_engine.record_command('right_click')
                         last_action_text = 'RIGHT CLICK!'
                         last_action_time = current_time
                         last_action_color = (0, 220, 255)
@@ -369,6 +499,7 @@ def main():
                     elif trigger == 'double_click':
                         controller.double_click()
                         audio.double_click()
+                        nav_engine.record_command('double_click')
                         last_action_text = 'DOUBLE CLICK!'
                         last_action_time = current_time
                         last_action_color = (255, 100, 255)
@@ -378,6 +509,7 @@ def main():
                         if current_time - last_scroll_time > SCROLL_INTERVAL:
                             controller.scroll(3)
                             audio.scroll_up()
+                            nav_engine.record_command('scroll_up')
                             last_scroll_time = current_time
                             last_action_text = 'SCROLL UP'
                             last_action_time = current_time
@@ -387,32 +519,53 @@ def main():
                         if current_time - last_scroll_time > SCROLL_INTERVAL:
                             controller.scroll(-3)
                             audio.scroll_down()
+                            nav_engine.record_command('scroll_down')
                             last_scroll_time = current_time
                             last_action_text = 'SCROLL DOWN'
                             last_action_time = current_time
                             last_action_color = (0, 240, 255)
                             action_fired = True
+
                 if action_fired:
                     sensor_log.append((time.strftime('%H:%M:%S'), last_action_text, last_action_color))
                     if len(sensor_log) > 12:
                         sensor_log.pop(0)
                     ripples.append({'x': int(anchor_x), 'y': int(anchor_y) + 30, 'start': current_time, 'color': last_action_color})
-                target_screen_x, target_screen_y, dwell_action = nav_engine.update(laser_pt=(anchor_x, anchor_y), euler_angles=(pitch, yaw, roll), gaze_offset=gaze_offset, current_time=current_time)
+
                 if not is_paused and current_time >= click_suppress_until:
                     controller.move_to(target_screen_x, target_screen_y)
+
                 if not is_paused and dwell_action == 'dwell_click':
-                    controller.left_click()
-                    audio.left_click()
-                    last_action_text = 'DWELL CLICK!'
+                    light_hit = check_light_button_hit(target_screen_x, target_screen_y)
+                    if light_hit is not None:
+                        if light_hit:
+                            esp32.set_light(True)
+                            audio.light_turned_on()
+                            nav_engine.record_command('light_on')
+                            last_action_text = 'DWELL: LIGHT ON'
+                            last_action_color = (255, 255, 255)
+                        else:
+                            esp32.set_light(False)
+                            audio.light_turned_off()
+                            nav_engine.record_command('light_off')
+                            last_action_text = 'DWELL: LIGHT OFF'
+                            last_action_color = (180, 180, 180)
+                    else:
+                        controller.left_click()
+                        audio.left_click()
+                        nav_engine.record_command('dwell_click')
+                        last_action_text = 'DWELL CLICK!'
+                        last_action_color = (0, 240, 255)
                     last_action_time = current_time
-                    last_action_color = (0, 240, 255)
                     click_suppress_until = current_time + 0.05
                     sensor_log.append((time.strftime('%H:%M:%S'), last_action_text, last_action_color))
                     ripples.append({'x': int(anchor_x), 'y': int(anchor_y) + 30, 'start': current_time, 'color': last_action_color})
+
                 reticle_pt = (int(anchor_x), int(anchor_y) + 30)
                 cv2.circle(frame, reticle_pt, 6, (0, 240, 255), -1, cv2.LINE_AA)
                 cv2.circle(frame, reticle_pt, 9, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.drawMarker(frame, reticle_pt, (0, 240, 255), cv2.MARKER_CROSS, 16, 1, cv2.LINE_AA)
+
                 r_eye_indices = [33, 160, 158, 133, 153, 144]
                 l_eye_indices = [362, 385, 387, 263, 373, 380]
                 closure_thresh = gestures.get('closure_threshold', 0.25)
@@ -424,6 +577,7 @@ def main():
                     cv2.circle(frame, (int(landmarks[idx][0]), int(landmarks[idx][1]) + 30), 1, l_eye_col, -1)
                 for idx in [1, 61, 291, 152]:
                     cv2.circle(frame, (int(landmarks[idx][0]), int(landmarks[idx][1]) + 30), 2, (0, 255, 120), -1)
+
                 active_hold = max(hold_progress, nav_engine.dwell_progress if nav_engine.enable_dwell_click else 0.0)
                 if active_hold > 0.0:
                     gauge_col = (255, 100, 255) if gestures.get('is_blinking') else (0, 240, 255) if nav_engine.dwell_progress > 0 else (0, 255, 120)
@@ -439,6 +593,9 @@ def main():
                 cv2.rectangle(frame, (card_x1, card_y1), (card_x2, card_y2), (0, 220, 255), 2)
                 cv2.putText(frame, 'SEARCHING FOR FACE...', (card_x1 + 35, card_y1 + 45), cv2.FONT_HERSHEY_DUPLEX, 0.55, (0, 240, 255), 1, cv2.LINE_AA)
                 cv2.putText(frame, 'Position face in view to track', (card_x1 + 40, card_y1 + 80), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (180, 195, 210), 1, cv2.LINE_AA)
+                if nav_engine.is_failsafe_active:
+                    cv2.putText(frame, '[FAILSAFE ACTIVE: POINTER HELD]', (card_x1 + 25, card_y1 + 100), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 60, 255), 1, cv2.LINE_AA)
+
             active_ripples = []
             for r in ripples:
                 elapsed_r = current_time - r['start']
@@ -449,6 +606,7 @@ def main():
                     cv2.circle(frame, (r['x'], r['y']), rad, r['color'], thick, cv2.LINE_AA)
                     active_ripples.append(r)
             ripples = active_ripples
+
             hw = esp32.get_telemetry()
             if hw.proximity_alert:
                 last_action_text = f'PROXIMITY ALERT ({hw.distance_cm:.1f}cm)!'
@@ -464,12 +622,14 @@ def main():
                 if current_time - last_motion_audio_time > 2.5:
                     audio.motion_alert()
                     last_motion_audio_time = current_time
+
             if hw.last_event_text and current_time - hw.last_event_time < 0.1:
                 event_entry = (time.strftime('%H:%M:%S'), hw.last_event_text, (0, 140, 255) if 'MOTION' in hw.last_event_text else (0, 240, 255))
                 if not sensor_log or sensor_log[-1][1] != event_entry[1]:
                     sensor_log.append(event_entry)
                     if len(sensor_log) > 12:
                         sensor_log.pop(0)
+
             cv2.rectangle(frame, (0, 0), (cam_w, 28), (12, 16, 24), -1)
             cv2.line(frame, (0, 28), (cam_w, 28), (35, 45, 60), 1)
             st_dot_col = (0, 255, 120) if hw.is_connected and hw.state == HardwareState.ARMED else (0, 60, 255) if hw.is_connected else (90, 100, 115)
@@ -483,27 +643,55 @@ def main():
             else:
                 dist_txt = 'HC-SR04: --'
                 dist_radar_col = (130, 140, 150)
-            cv2.putText(frame, dist_txt, (200, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, dist_radar_col, 1, cv2.LINE_AA)
+            cv2.putText(frame, dist_txt, (180, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, dist_radar_col, 1, cv2.LINE_AA)
+
+            lt_hud_txt = 'LIGHT: [ON]' if hw.light_state else 'LIGHT: [OFF]'
+            lt_hud_col = (255, 255, 255) if hw.light_state else (120, 130, 145)
+            cv2.putText(frame, lt_hud_txt, (320, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, lt_hud_col, 1, cv2.LINE_AA)
+
             ax, ay, az = hw.motion_values
             g_mag = math.sqrt(ax * ax + ay * ay + az * az)
             mot_hud_col = (0, 80, 255) if hw.motion_alert else (0, 255, 140)
-            mot_hud_txt = f'MPU6050: {g_mag:.2f}g [MOTION!]' if hw.motion_alert else f'MPU6050: {g_mag:.2f}g'
-            cv2.putText(frame, mot_hud_txt, (360, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, mot_hud_col, 1, cv2.LINE_AA)
+            mot_hud_txt = f'MPU: {g_mag:.2f}g'
+            cv2.putText(frame, mot_hud_txt, (450, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, mot_hud_col, 1, cv2.LINE_AA)
             cv2.putText(frame, f'FPS: {fps:.0f}', (cam_w - 75, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, (0, 240, 255), 1, cv2.LINE_AA)
+
+            btn_on_bg = (20, 48, 32) if hw.light_state else (18, 24, 34)
+            btn_on_border = (0, 255, 120) if hw.light_state else (70, 85, 100)
+            cv2.rectangle(frame, (450, 470), (535, 502), btn_on_bg, -1)
+            cv2.rectangle(frame, (450, 470), (535, 502), btn_on_border, 1)
+            cv2.putText(frame, 'LIGHT ON', (458, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.32, btn_on_border, 1, cv2.LINE_AA)
+
+            btn_off_bg = (42, 20, 26) if not hw.light_state else (18, 24, 34)
+            btn_off_border = (0, 60, 255) if not hw.light_state else (70, 85, 100)
+            cv2.rectangle(frame, (545, 470), (630, 502), btn_off_bg, -1)
+            cv2.rectangle(frame, (545, 470), (630, 502), btn_off_border, 1)
+            cv2.putText(frame, 'LIGHT OFF', (552, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.32, btn_off_border, 1, cv2.LINE_AA)
+
             cv2.rectangle(frame, (0, 510), (cam_w, cam_h), (12, 16, 24), -1)
             cv2.line(frame, (0, 510), (cam_w, 510), (35, 45, 60), 1)
-            cv2.putText(frame, 'HARDWARE LEDS:', (12, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (170, 185, 200), 1, cv2.LINE_AA)
+            cv2.putText(frame, 'LEDS:', (10, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (170, 185, 200), 1, cv2.LINE_AA)
             is_disarmed = hw.state == HardwareState.DISARMED
             is_armed = hw.state == HardwareState.ARMED
             is_prox = hw.proximity_alert and is_armed
-            led_mini = [('R1', is_disarmed, (0, 0, 255)), ('R2', is_disarmed, (0, 0, 255)), ('G1', is_armed, (0, 255, 120)), ('G2', is_armed, (0, 255, 120)), ('B1', is_prox, (255, 180, 0)), ('B2', is_prox, (255, 180, 0))]
-            mini_x = 115
+            led_mini = [
+                ('R1', is_disarmed, (0, 0, 255)),
+                ('R2', is_disarmed, (0, 0, 255)),
+                ('G1', is_armed, (0, 255, 120)),
+                ('G2', is_armed, (0, 255, 120)),
+                ('B1', is_prox, (255, 180, 0)),
+                ('B2', is_prox, (255, 180, 0)),
+                ('WL', hw.light_state, (255, 255, 255))
+            ]
+            mini_x = 55
             for lbl, lit, col in led_mini:
                 dot_c = col if lit else (40, 45, 60)
                 cv2.circle(frame, (mini_x, 525), 4, dot_c, -1, cv2.LINE_AA)
-                cv2.putText(frame, lbl, (mini_x + 6, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (200, 210, 220) if lit else (100, 110, 120), 1, cv2.LINE_AA)
-                mini_x += 35
-            cv2.putText(frame, 'BTNS: D16(ARM) | D17(DISARM)', (340, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (160, 175, 190), 1, cv2.LINE_AA)
+                cv2.putText(frame, lbl, (mini_x + 6, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.26, (200, 210, 220) if lit else (100, 110, 120), 1, cv2.LINE_AA)
+                mini_x += 38
+
+            cv2.putText(frame, 'BTNS: D16(ARM) | D17(DISARM) | D13(LIGHT)', (325, 528), cv2.FONT_HERSHEY_SIMPLEX, 0.26, (160, 175, 190), 1, cv2.LINE_AA)
+
             if hw.proximity_alert:
                 cv2.rectangle(frame, (2, 30), (cam_w - 2, 508), (0, 60, 255), 3)
                 alert_bar_w = 340
@@ -511,8 +699,9 @@ def main():
                 cv2.rectangle(frame, (ax1, 34), (ax1 + alert_bar_w, 62), (15, 20, 32), -1)
                 cv2.rectangle(frame, (ax1, 34), (ax1 + alert_bar_w, 62), (0, 60, 255), 2)
                 cv2.putText(frame, f'! PROXIMITY ALERT: {dist_val:.1f} CM < 30 CM !', (ax1 + 14, 53), cv2.FONT_HERSHEY_DUPLEX, 0.42, (0, 60, 255), 1, cv2.LINE_AA)
+
             if current_time - last_action_time < 0.7 and last_action_text:
-                banner_w = 280
+                banner_w = 320
                 bx1 = (cam_w - banner_w) // 2
                 bx2 = bx1 + banner_w
                 by1, by2 = (68 if hw.proximity_alert else 36, 108 if hw.proximity_alert else 76)
@@ -520,18 +709,21 @@ def main():
                 cv2.rectangle(b_overlay, (bx1, by1), (bx2, by2), (18, 22, 30), -1)
                 cv2.addWeighted(b_overlay, 0.88, frame, 0.12, 0, frame)
                 cv2.rectangle(frame, (bx1, by1), (bx2, by2), last_action_color, 2)
-                cv2.putText(frame, last_action_text, (bx1 + 14, by1 + 26), cv2.FONT_HERSHEY_DUPLEX, 0.52, last_action_color, 1, cv2.LINE_AA)
+                cv2.putText(frame, last_action_text, (bx1 + 14, by1 + 26), cv2.FONT_HERSHEY_DUPLEX, 0.5, last_action_color, 1, cv2.LINE_AA)
+
             t_frame_end = time.time()
             frame_times.append(t_frame_end - t_frame_start)
             if len(frame_times) > 30:
                 frame_times.pop(0)
             fps = len(frame_times) / sum(frame_times) if sum(frame_times) > 0 else 30.0
+
             if show_sidebar:
                 panel = np.zeros((cam_h, sidebar_w, 3), dtype=np.uint8)
                 render_cyber_dashboard(panel, nav_engine, gestures, hw, is_paused, has_face, fps, sensor_log, speech_active=speech_enabled, speech_listening=speech_engine.is_listening)
                 display_canvas = np.hstack([frame, panel])
             else:
                 display_canvas = frame
+
             cv2.imshow(window_name, display_canvas)
             key = cv2.waitKey(1) & 255
             if key == 27:
@@ -546,6 +738,26 @@ def main():
                     audio.resume()
                     audio.speak('Resumed')
                 sensor_log.append((time.strftime('%H:%M:%S'), 'PAUSED' if is_paused else 'RESUMED', (0, 140, 255)))
+            elif key in (ord('l'), ord('L')):
+                esp32.toggle_light()
+                new_l_target = not hw.light_state
+                if new_l_target:
+                    audio.light_turned_on()
+                else:
+                    audio.light_turned_off()
+                nav_engine.record_command('toggle_light')
+                last_action_text = f"LIGHT {('ON' if new_l_target else 'OFF')}"
+                last_action_time = current_time
+                last_action_color = (255, 255, 255) if new_l_target else (180, 180, 180)
+                sensor_log.append((time.strftime('%H:%M:%S'), f"LIGHT {('ON' if new_l_target else 'OFF')}", last_action_color))
+            elif key in (ord('o'), ord('O')):
+                esp32.set_light(False)
+                audio.light_turned_off()
+                nav_engine.record_command('light_off')
+                last_action_text = 'LIGHT OFF'
+                last_action_time = current_time
+                last_action_color = (180, 180, 180)
+                sensor_log.append((time.strftime('%H:%M:%S'), 'LIGHT OFF', (180, 180, 180)))
             elif key in (ord('v'), ord('V')):
                 speech_enabled = not speech_enabled
                 if speech_enabled:
@@ -656,5 +868,6 @@ def main():
         camera.stop()
         cv2.destroyAllWindows()
         print('[INFO] I.R.I.S. Session Terminated Cleanly.')
+
 if __name__ == '__main__':
     main()

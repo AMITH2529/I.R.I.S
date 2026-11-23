@@ -50,5 +50,14 @@ class TestHardwareIntegration(unittest.TestCase):
         ctrl._parse_line('MOTION_ALERT')
         t_alert = ctrl.get_telemetry()
         self.assertTrue(t_alert.motion_alert)
+
+    def test_light_control_and_telemetry(self):
+        ctrl = ESP32Controller(port='COM5')
+        ctrl._handle_connection_change(True, 'Connected')
+        self.assertFalse(ctrl.get_telemetry().light_state)
+        ctrl._parse_line('DEVICE: LIGHT: ON')
+        self.assertTrue(ctrl.get_telemetry().light_state)
+        ctrl._parse_line('DEVICE: LIGHT: OFF')
+        self.assertFalse(ctrl.get_telemetry().light_state)
 if __name__ == '__main__':
     unittest.main()

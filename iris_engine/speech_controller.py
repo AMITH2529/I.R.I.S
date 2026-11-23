@@ -270,13 +270,31 @@ class SpeechControlEngine:
         elif 'test led' in text or 'test light' in text:
             action_name = 'test_leds'
             verbal_response = 'Testing LEDs'
+        elif any((w in text for w in ('light on', 'turn on light', 'turn on the light', 'switch on light', 'switch on the light'))):
+            action_name = 'light_on'
+            verbal_response = 'The light is now ON'
+        elif any((w in text for w in ('light off', 'turn off light', 'turn off the light', 'switch off light', 'switch off the light'))):
+            action_name = 'light_off'
+            verbal_response = 'The light is now OFF'
+        elif 'toggle light' in text:
+            action_name = 'toggle_light'
+            verbal_response = 'Toggling light'
+        elif any((w in text for w in ('fan on', 'turn on fan', 'turn on the fan', 'switch on fan'))):
+            action_name = 'fan_on'
+            verbal_response = 'The fan is now ON'
+        elif any((w in text for w in ('fan off', 'turn off fan', 'turn off the fan', 'switch off fan'))):
+            action_name = 'fan_off'
+            verbal_response = 'The fan is now OFF'
         elif 'time' in text:
             cur_time_str = time.strftime('%I:%M %p')
             verbal_response = f'The time is {cur_time_str}'
             action_name = 'time'
         elif 'help' in text:
-            verbal_response = 'You can say: click, scroll up, scroll down, center, open Chrome, open Notepad, or minimize window'
+            verbal_response = 'You can say: click, light on, light off, scroll up, scroll down, center, open Chrome, or minimize window'
             action_name = 'help'
+        else:
+            action_name = 'voice_error'
+            verbal_response = 'Command not recognized'
         if action_name:
             self.last_action_text = f'VOICE: {text.upper()}'
             self.last_action_time = now

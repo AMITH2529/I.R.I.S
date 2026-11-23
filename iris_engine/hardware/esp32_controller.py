@@ -34,6 +34,15 @@ class ESP32Controller:
     def test_leds(self) -> bool:
         return self._serial.send_command('CMD: TEST_LEDS')
 
+    def set_light(self, on: bool) -> bool:
+        cmd = 'CMD: LIGHT: ON' if on else 'CMD: LIGHT: OFF'
+        return self._serial.send_command(cmd)
+
+    def toggle_light(self) -> bool:
+        with self._lock:
+            target = not self._telemetry.light_state
+        return self.set_light(target)
+
     def get_telemetry(self) -> HardwareTelemetry:
         now = time.time()
         with self._lock:
@@ -48,7 +57,7 @@ class ESP32Controller:
                     ax = round(0.02 * math.sin(now * 1.4), 2)
                     ay = round(-0.03 + 0.02 * math.cos(now * 1.1), 2)
                     az = round(0.98 + 0.02 * math.sin(now * 2.7), 2)
-            return HardwareTelemetry(is_connected=self._telemetry.is_connected, port=self._telemetry.port, state=self._telemetry.state, distance_cm=dist, proximity_alert=has_prox, motion_alert=has_motion, motion_values=(ax, ay, az), last_event_text=self._telemetry.last_event_text, last_event_time=self._telemetry.last_event_time, last_heartbeat=self._telemetry.last_heartbeat)
+            return HardwareTelemetry(is_connected=self._telemetry.is_connected, port=self._telemetry.port, state=self._telemetry.state, distance_cm=dist, proximity_alert=has_prox, motion_alert=has_motion, motion_values=(ax, ay, az), light_state=self._telemetry.light_state, last_event_text=self._telemetry.last_event_text, last_event_time=self._telemetry.last_event_time, last_heartbeat=self._telemetry.last_heartbeat)
 
     def _handle_connection_change(self, connected: bool, message: str) -> None:
         now = time.time()
@@ -86,6 +95,18 @@ class ESP32Controller:
                 self._telemetry.last_event_time = now
                 if self.on_alert_triggered:
                     self.on_alert_triggered('STATE', 'DISARMED')
+            elif line == 'DEVICE: LIGHT: ON' or line == 'LIGHT: ON':
+                self._telemetry.light_state = True
+                self._telemetry.last_event_text = 'LIGHT TURNED ON'
+                self._telemetry.last_event_time = now
+                if self.on_alert_triggered:
+                    self.on_alert_triggered('DEVICE', 'LIGHT_ON')
+            elif line == 'DEVICE: LIGHT: OFF' or line == 'LIGHT: OFF':
+                self._telemetry.light_state = False
+                self._telemetry.last_event_text = 'LIGHT TURNED OFF'
+                self._telemetry.last_event_time = now
+                if self.on_alert_triggered:
+                    self.on_alert_triggered('DEVICE', 'LIGHT_OFF')
             elif line.startswith('DISTANCE:'):
                 try:
                     val_str = line.split(':', 1)[1].strip()

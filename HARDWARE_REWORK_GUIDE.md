@@ -80,6 +80,8 @@ If your LED leads were cut short, you **cannot** use lead length to identify the
 | **Blue LED 1** | Cathode (-) | **GND** | Ground Rail | 0V |
 | **Blue LED 2** | Anode (+) | **GPIO 23** *(via 220Ω)* | Assistive / Proximity Alert (<30cm) | 3.3V |
 | **Blue LED 2** | Cathode (-) | **GND** | Ground Rail | 0V |
+| **White Automation LED** | Anode (+) | **GPIO 13** *(via 220Ω/330Ω)* | Eye-Controlled Home Automation Light | 3.3V |
+| **White Automation LED** | Cathode (-) | **GND** | Ground Rail | 0V |
 | **ARM Button** | Terminal 1 | **GPIO 16** | Active-LOW Arm Trigger (`INPUT_PULLUP`) | 3.3V |
 | **ARM Button** | Terminal 2 | **GND** | Ground Rail | 0V |
 | **DISARM Button**| Terminal 1 | **GPIO 17** | Active-LOW Disarm Trigger (`INPUT_PULLUP`)| 3.3V |
@@ -156,6 +158,20 @@ HC-SR04 ECHO Pin (5V Pulse)
 4. Connect HC-SR04 **ECHO** to **R1 (2.2kΩ)**.
 5. Connect the junction between **R1** and **R2 (3.3kΩ)** to ESP32 **GPIO 19**.
 6. Connect the other end of **R2** to breadboard **GND rail**.
+
+### Step F: Add the 7th Eye-Controlled Automation LED (GPIO 13)
+> [!IMPORTANT]
+> **Zero Modification to Existing Circuit**: Do not move, disconnect, or rearrange any existing wires or components.
+1. Take **one new 5mm LED** (preferably White).
+2. Take **one dedicated 220Ω or 330Ω resistor**.
+3. Locate ESP32 **GPIO 13** (Pin 13, located right above GND on the right pin header of the 30-pin ESP32 DevKit V1).
+4. Connect the **220Ω resistor** from ESP32 **GPIO 13** to an available breadboard tie-point row.
+5. In that same row, connect the **Anode (+ / long leg / smaller internal post)** of the White LED.
+6. Connect the **Cathode (- / short leg / flat rim notch / large anvil flag)** of the White LED directly to the common **GND rail**.
+7. **Validation**:
+   - Voltage drop: ~2.8V - 3.1V across the LED.
+   - Current draw: ~1.2mA - 2.0mA (well below the ESP32 12mA drive limit).
+   - Boot safety: GPIO 13 is non-strapping, so normal flashing and booting remain 100% unaffected.
 
 ---
 

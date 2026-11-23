@@ -107,3 +107,29 @@ class AudioFeedbackEngine:
             self.speak(verbal_response)
         elif command_name:
             self.speak(command_name)
+
+    def light_turned_on(self) -> None:
+        self._async_beep([(800, 30), (1200, 40)])
+        self.speak('The light is now ON')
+
+    def light_turned_off(self) -> None:
+        self._async_beep([(1200, 30), (800, 40)])
+        self.speak('The light is now OFF')
+
+    def fan_turned_on(self) -> None:
+        self._async_beep([(800, 30), (1200, 40)])
+        self.speak('The fan is now ON')
+
+    def fan_turned_off(self) -> None:
+        self._async_beep([(1200, 30), (800, 40)])
+        self.speak('The fan is now OFF')
+
+    def voice_error(self, message: str='Command not recognized') -> None:
+        self._async_beep([(300, 45), (250, 55)])
+        self.speak(message)
+
+    def tracking_lost_alert(self) -> None:
+        self.speak('Tracking lost')
+
+    def tracking_recovered(self) -> None:
+        self.speak('Tracking recovered')

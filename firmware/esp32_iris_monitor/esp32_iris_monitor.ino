@@ -9,6 +9,8 @@ const int PIN_GREEN_1 = 27;
 const int PIN_GREEN_2 = 32;
 const int PIN_BLUE_1  = 33;
 const int PIN_BLUE_2  = 23;
+const int PIN_LIGHT   = 13;
+bool lightState = false;
 
 const int PIN_BTN_ARM    = 16;
 const int PIN_BTN_DISARM = 17;
@@ -232,6 +234,8 @@ void setup() {
   pinMode(PIN_GREEN_2, OUTPUT);
   pinMode(PIN_BLUE_1, OUTPUT);
   pinMode(PIN_BLUE_2, OUTPUT);
+  pinMode(PIN_LIGHT, OUTPUT);
+  digitalWrite(PIN_LIGHT, LOW);
 
   pinMode(PIN_BTN_ARM, INPUT_PULLUP);
   pinMode(PIN_BTN_DISARM, INPUT_PULLUP);
@@ -321,11 +325,24 @@ void loop() {
       transitionToArmed("SERIAL_CMD");
     } else if (cmd == "CMD: DISARM" || cmd == "DISARM") {
       transitionToDisarmed("SERIAL_CMD");
+    } else if (cmd == "CMD: LIGHT: ON" || cmd == "LIGHT: ON" || cmd == "CMD: LIGHT ON" || cmd == "LIGHT ON" || cmd == "LIGHT_ON") {
+      digitalWrite(PIN_LIGHT, HIGH);
+      lightState = true;
+      Serial.println("DEVICE: LIGHT: ON");
+    } else if (cmd == "CMD: LIGHT: OFF" || cmd == "LIGHT: OFF" || cmd == "CMD: LIGHT OFF" || cmd == "LIGHT OFF" || cmd == "LIGHT_OFF") {
+      digitalWrite(PIN_LIGHT, LOW);
+      lightState = false;
+      Serial.println("DEVICE: LIGHT: OFF");
     } else if (cmd == "CMD: STATUS" || cmd == "STATUS") {
       if (currentState == STATE_ARMED) {
         Serial.println("SYSTEM: ARMED");
       } else {
         Serial.println("SYSTEM: DISARMED");
+      }
+      if (lightState) {
+        Serial.println("DEVICE: LIGHT: ON");
+      } else {
+        Serial.println("DEVICE: LIGHT: OFF");
       }
     } else if (cmd == "CMD: TEST_LEDS" || cmd == "CMD: LED_TEST" || cmd == "TEST_LEDS" || cmd == "TEST") {
       runLedTest();

@@ -168,6 +168,33 @@ def main():
     else:
         print('  [INFO] No button press detected during 3s window.')
         test_results['Push Buttons'] = 'READY (INPUT_PULLUP)'
+
+    print('\n' + '-' * 70)
+    print('TEST 7: Home Automation Light (White LED GPIO 13)')
+    print('-' * 70)
+    ser.write(b'CMD: LIGHT: ON\n')
+    ser.flush()
+    time.sleep(1.0)
+    light_on_ack = False
+    while ser.in_waiting:
+        line = ser.readline().decode('utf-8', errors='ignore').strip()
+        print(f'  ESP32 -> {line}')
+        if 'DEVICE: LIGHT: ON' in line:
+            light_on_ack = True
+    if light_on_ack:
+        print('  [PASS] White LED (GPIO 13) Switched ON!')
+        test_results['White LED (GPIO 13)'] = 'PASS (ON/OFF ACK)'
+    else:
+        print('  [INFO] Sent CMD: LIGHT: ON')
+        test_results['White LED (GPIO 13)'] = 'SENT'
+    time.sleep(0.8)
+    ser.write(b'CMD: LIGHT: OFF\n')
+    ser.flush()
+    time.sleep(0.5)
+    while ser.in_waiting:
+        line = ser.readline().decode('utf-8', errors='ignore').strip()
+        print(f'  ESP32 -> {line}')
+
     ser.write(b'CMD: DISARM\n')
     ser.flush()
     time.sleep(0.2)

@@ -38,6 +38,23 @@ class PointerNavigationEngine:
         self.affine_matrix: Optional[np.ndarray] = None
         self.calib_step = 0
         self.calib_samples: List[Tuple[float, float]] = []
+        self.command_history: Dict[str, int] = {}
+        self.is_failsafe_active: bool = False
+        self.recent_speeds: List[float] = []
+
+    def record_command(self, cmd_name: str) -> None:
+        self.command_history[cmd_name] = self.command_history.get(cmd_name, 0) + 1
+
+    def get_top_commands(self, count: int=3) -> List[Tuple[str, int]]:
+        return sorted(self.command_history.items(), key=lambda x: x[1], reverse=True)[:count]
+
+    def trigger_failsafe(self) -> None:
+        self.is_failsafe_active = True
+        self.dwell_start_time = None
+        self.dwell_progress = 0.0
+
+    def clear_failsafe(self) -> None:
+        self.is_failsafe_active = False
 
     def set_method(self, method: str) -> None:
         if method in self.ALL_METHODS:
@@ -160,7 +177,7 @@ class PointerNavigationEngine:
         return (self.cursor_x, self.cursor_y, triggered_action)
 
     def _update_dwell(self, cur_x: float, cur_y: float, current_time: float) -> Optional[str]:
-        if not self.enable_dwell_click:
+        if not self.enable_dwell_click or self.is_failsafe_active:
             self.dwell_progress = 0.0
             self.dwell_start_time = None
             return None
@@ -171,6 +188,13 @@ class PointerNavigationEngine:
             return None
         ax, ay = self.dwell_anchor_pos
         dist = math.hypot(cur_x - ax, cur_y - ay)
+        self.recent_speeds.append(dist)
+        if len(self.recent_speeds) > 15:
+            self.recent_speeds.pop(0)
+        avg_speed = sum(self.recent_speeds) / max(1, len(self.recent_speeds))
+        min_time = self.dwell_time * 0.7
+        max_time = self.dwell_time * 1.5
+        adaptive_target_time = max(min_time, min(max_time, self.dwell_time * (0.8 + 0.4 * (avg_speed / max(1.0, self.dwell_radius)))))
         if dist > self.dwell_radius:
             self.dwell_anchor_pos = (cur_x, cur_y)
             self.dwell_start_time = current_time
@@ -179,12 +203,13 @@ class PointerNavigationEngine:
         if self.dwell_start_time is None:
             self.dwell_start_time = current_time
         elapsed = current_time - self.dwell_start_time
-        self.dwell_progress = min(1.0, elapsed / self.dwell_time)
+        self.dwell_progress = min(1.0, elapsed / adaptive_target_time)
         if self.dwell_progress >= 1.0:
             if current_time - self.last_dwell_click_time > self.dwell_cooldown:
                 self.last_dwell_click_time = current_time
                 self.dwell_start_time = current_time
                 self.dwell_progress = 0.0
+                self.record_command('dwell_click')
                 return 'dwell_click'
         return None
 
