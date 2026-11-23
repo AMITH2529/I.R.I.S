@@ -180,9 +180,13 @@ void runLedTest() {
   Serial.println("LED_TEST: BLUE 2 (GPIO 23) ON");
   digitalWrite(PIN_BLUE_2, HIGH); delay(800); digitalWrite(PIN_BLUE_2, LOW); delay(200);
 
-  Serial.println("LED_TEST: ALL 6 LEDS ON");
-  setRedLeds(true); setGreenLeds(true); setBlueLeds(true);
+  Serial.println("LED_TEST: WHITE AUTOMATION (GPIO 13) ON");
+  digitalWrite(PIN_LIGHT, HIGH); delay(800); digitalWrite(PIN_LIGHT, LOW); delay(150);
+
+  Serial.println("LED_TEST: ALL LEDS ON");
+  setRedLeds(true); setGreenLeds(true); setBlueLeds(true); digitalWrite(PIN_LIGHT, HIGH);
   delay(1200);
+  digitalWrite(PIN_LIGHT, lightState ? HIGH : LOW);
 
   updateLedOutputs();
   Serial.println(">>> LED IGNITION SWEEP COMPLETE <<<");
@@ -333,6 +337,14 @@ void loop() {
       digitalWrite(PIN_LIGHT, LOW);
       lightState = false;
       Serial.println("DEVICE: LIGHT: OFF");
+    } else if (cmd == "CMD: LIGHT: TOGGLE" || cmd == "LIGHT: TOGGLE" || cmd == "CMD: LIGHT TOGGLE" || cmd == "LIGHT TOGGLE" || cmd == "TOGGLE_LIGHT" || cmd == "CMD: TOGGLE") {
+      lightState = !lightState;
+      digitalWrite(PIN_LIGHT, lightState ? HIGH : LOW);
+      if (lightState) {
+        Serial.println("DEVICE: LIGHT: ON");
+      } else {
+        Serial.println("DEVICE: LIGHT: OFF");
+      }
     } else if (cmd == "CMD: STATUS" || cmd == "STATUS") {
       if (currentState == STATE_ARMED) {
         Serial.println("SYSTEM: ARMED");

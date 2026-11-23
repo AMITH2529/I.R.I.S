@@ -148,44 +148,53 @@ def render_cyber_dashboard(panel: np.ndarray, nav: PointerNavigationEngine, gest
         cv2.putText(panel, label, (led_x - 14, 248), cv2.FONT_HERSHEY_SIMPLEX, 0.24, dot_col if is_on else (120, 130, 140), 1, cv2.LINE_AA)
         led_x += 42
 
-    light_box_y = 254
-    cv2.rectangle(panel, (18, light_box_y), (pw - 18, light_box_y + 30), (22, 28, 40), -1)
-    cv2.rectangle(panel, (18, light_box_y), (pw - 18, light_box_y + 30), (45, 60, 85), 1)
+    light_box_y = 252
+    cv2.rectangle(panel, (18, light_box_y), (pw - 18, light_box_y + 44), (22, 28, 40), -1)
+    cv2.rectangle(panel, (18, light_box_y), (pw - 18, light_box_y + 44), (45, 60, 85), 1)
     lt_status_col = (255, 255, 255) if hw.light_state else (120, 130, 145)
-    lt_status_txt = 'LIGHT: ON (GPIO 13)' if hw.light_state else 'LIGHT: OFF (GPIO 13)'
-    cv2.putText(panel, lt_status_txt, (26, light_box_y + 19), cv2.FONT_HERSHEY_SIMPLEX, 0.31, lt_status_col, 1, cv2.LINE_AA)
-    btn_on_c = (0, 255, 120) if hw.light_state else (75, 85, 100)
-    btn_off_c = (0, 60, 255) if not hw.light_state else (75, 85, 100)
-    cv2.putText(panel, '[ON (L)]', (215, light_box_y + 19), cv2.FONT_HERSHEY_SIMPLEX, 0.3, btn_on_c, 1, cv2.LINE_AA)
-    cv2.putText(panel, '[OFF (O)]', (278, light_box_y + 19), cv2.FONT_HERSHEY_SIMPLEX, 0.3, btn_off_c, 1, cv2.LINE_AA)
+    lt_status_txt = 'HOME LIGHT: [ON] (GPIO 13)' if hw.light_state else 'HOME LIGHT: [OFF] (GPIO 13)'
+    cv2.putText(panel, lt_status_txt, (26, light_box_y + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.3, lt_status_col, 1, cv2.LINE_AA)
+
+    tog_side_col = (255, 255, 255) if hw.light_state else (80, 95, 115)
+    cv2.rectangle(panel, (24, light_box_y + 20), (190, light_box_y + 40), (25, 55, 40) if hw.light_state else (20, 25, 35), -1)
+    cv2.rectangle(panel, (24, light_box_y + 20), (190, light_box_y + 40), (0, 255, 120) if hw.light_state else (65, 80, 95), 1)
+    cv2.putText(panel, '[TOGGLE (L)]', (55, light_box_y + 34), cv2.FONT_HERSHEY_SIMPLEX, 0.28, tog_side_col, 1, cv2.LINE_AA)
+
+    cv2.rectangle(panel, (205, light_box_y + 20), (265, light_box_y + 40), (20, 48, 32) if hw.light_state else (20, 25, 35), -1)
+    cv2.rectangle(panel, (205, light_box_y + 20), (265, light_box_y + 40), (0, 255, 120) if hw.light_state else (65, 80, 95), 1)
+    cv2.putText(panel, '[ON]', (223, light_box_y + 34), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (0, 255, 120) if hw.light_state else (100, 115, 130), 1, cv2.LINE_AA)
+
+    cv2.rectangle(panel, (275, light_box_y + 20), (335, light_box_y + 40), (42, 20, 26) if not hw.light_state else (20, 25, 35), -1)
+    cv2.rectangle(panel, (275, light_box_y + 20), (335, light_box_y + 40), (0, 60, 255) if not hw.light_state else (65, 80, 95), 1)
+    cv2.putText(panel, '[OFF]', (292, light_box_y + 34), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (0, 60, 255) if not hw.light_state else (100, 115, 130), 1, cv2.LINE_AA)
 
     dist_val = hw.distance_cm
     dist_valid = 0.5 < dist_val < 450.0
     dist_str = f'{dist_val:.1f} cm' if dist_valid else '--'
     dist_col = (0, 60, 255) if hw.proximity_alert else (0, 240, 255) if dist_valid else (140, 150, 160)
-    cv2.putText(panel, f'HC-SR04 Radar (D18/D19): {dist_str}', (18, 298), cv2.FONT_HERSHEY_SIMPLEX, 0.3, dist_col, 1, cv2.LINE_AA)
-    cv2.rectangle(panel, (18, 304), (pw - 20, 311), (32, 38, 48), -1)
+    cv2.putText(panel, f'HC-SR04 Radar (D18/D19): {dist_str}', (18, 312), cv2.FONT_HERSHEY_SIMPLEX, 0.3, dist_col, 1, cv2.LINE_AA)
+    cv2.rectangle(panel, (18, 317), (pw - 20, 324), (32, 38, 48), -1)
     if dist_valid:
         gauge_pct = min(1.0, max(0.0, dist_val / 100.0))
         gw = int((pw - 38) * gauge_pct)
         g_col = (0, 60, 255) if dist_val < 30.0 else (0, 220, 255) if dist_val < 60.0 else (0, 255, 120)
-        cv2.rectangle(panel, (18, 304), (18 + gw, 311), g_col, -1)
+        cv2.rectangle(panel, (18, 317), (18 + gw, 324), g_col, -1)
     thresh_x = int(18 + (pw - 38) * (30.0 / 100.0))
-    cv2.line(panel, (thresh_x, 302), (thresh_x, 313), (0, 60, 255), 2)
-    cv2.rectangle(panel, (18, 304), (pw - 20, 311), (55, 65, 80), 1)
+    cv2.line(panel, (thresh_x, 315), (thresh_x, 326), (0, 60, 255), 2)
+    cv2.rectangle(panel, (18, 317), (pw - 20, 324), (55, 65, 80), 1)
 
     ax, ay, az = hw.motion_values
     mag = math.sqrt(ax * ax + ay * ay + az * az)
     mot_col = (0, 80, 255) if hw.motion_alert else (0, 255, 120)
     mot_str = '[MOTION!]' if hw.motion_alert else '[STABLE]'
-    cv2.putText(panel, f'MPU-6050: AX:{ax:+.2f} AY:{ay:+.2f} AZ:{az:+.2f} {mot_str}', (18, 327), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (190, 205, 220), 1, cv2.LINE_AA)
+    cv2.putText(panel, f'MPU-6050: AX:{ax:+.2f} AY:{ay:+.2f} AZ:{az:+.2f} {mot_str}', (18, 339), cv2.FONT_HERSHEY_SIMPLEX, 0.28, (190, 205, 220), 1, cv2.LINE_AA)
 
     top_cmds = nav.get_top_commands(3)
     if top_cmds:
         top_str = ' | '.join([f'{k}:{v}' for k, v in top_cmds])
-        cv2.putText(panel, f'Top Intent: {top_str}', (18, 344), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (0, 240, 255), 1, cv2.LINE_AA)
+        cv2.putText(panel, f'Top Intent: {top_str}', (18, 355), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (0, 240, 255), 1, cv2.LINE_AA)
     else:
-        cv2.putText(panel, 'Adaptive Interaction: Gaze Velocity Tuned', (18, 344), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (130, 145, 160), 1, cv2.LINE_AA)
+        cv2.putText(panel, 'Adaptive Interaction: Gaze Velocity Tuned', (18, 355), cv2.FONT_HERSHEY_SIMPLEX, 0.27, (130, 145, 160), 1, cv2.LINE_AA)
 
     cv2.rectangle(panel, (10, 368), (pw - 10, 508), (18, 23, 33), -1)
     cv2.rectangle(panel, (10, 368), (pw - 10, 508), (35, 46, 64), 1)
@@ -247,17 +256,75 @@ def main():
     except Exception:
         pass
 
+    def get_window_pos(win_name: str) -> Tuple[int, int]:
+        try:
+            import ctypes
+            hwnd = ctypes.windll.user32.FindWindowW(None, win_name)
+            if hwnd:
+                rect = (ctypes.c_long * 4)()
+                ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+                return int(rect[0]), int(rect[1])
+        except Exception:
+            pass
+        return center_wx, center_wy
+
+    def handle_light_action(mode: str) -> bool:
+        telemetry = esp32.get_telemetry()
+        if mode == 'toggle':
+            new_state = not telemetry.light_state
+            esp32.set_light(new_state)
+            if new_state:
+                audio.light_turned_on()
+            else:
+                audio.light_turned_off()
+            nav_engine.record_command('toggle_light')
+            return new_state
+        elif mode == 'on':
+            esp32.set_light(True)
+            audio.light_turned_on()
+            nav_engine.record_command('light_on')
+            return True
+        elif mode == 'off':
+            esp32.set_light(False)
+            audio.light_turned_off()
+            nav_engine.record_command('light_off')
+            return False
+        return False
+
     def on_mouse_event(event, mx, my, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            if 450 <= mx <= 535 and 470 <= my <= 502:
-                esp32.set_light(True)
-                audio.light_turned_on()
-                nav_engine.record_command('light_on')
-            elif 545 <= mx <= 630 and 470 <= my <= 502:
-                esp32.set_light(False)
-                audio.light_turned_off()
-                nav_engine.record_command('light_off')
+            if 340 <= mx <= 495 and 456 <= my <= 504:
+                handle_light_action('toggle')
+            elif 505 <= mx <= 560 and 456 <= my <= 504:
+                handle_light_action('on')
+            elif 570 <= mx <= 630 and 456 <= my <= 504:
+                handle_light_action('off')
+            elif 640 + 18 <= mx <= 640 + 195 and 250 <= my <= 295:
+                handle_light_action('toggle')
+            elif 640 + 205 <= mx <= 640 + 265 and 250 <= my <= 295:
+                handle_light_action('on')
+            elif 640 + 275 <= mx <= 640 + 340 and 250 <= my <= 295:
+                handle_light_action('off')
+
     cv2.setMouseCallback(window_name, on_mouse_event)
+
+    def check_light_button_hit(tx: float, ty: float) -> Optional[str]:
+        cur_wx, cur_wy = get_window_pos(window_name)
+        rel_btn_x = tx - cur_wx
+        rel_btn_y = ty - cur_wy
+        if 340 <= rel_btn_x <= 495 and 456 <= rel_btn_y <= 504:
+            return 'toggle'
+        elif 505 <= rel_btn_x <= 560 and 456 <= rel_btn_y <= 504:
+            return 'on'
+        elif 570 <= rel_btn_x <= 630 and 456 <= rel_btn_y <= 504:
+            return 'off'
+        elif 640 + 18 <= rel_btn_x <= 640 + 195 and 250 <= rel_btn_y <= 295:
+            return 'toggle'
+        elif 640 + 205 <= rel_btn_x <= 640 + 265 and 250 <= rel_btn_y <= 295:
+            return 'on'
+        elif 640 + 275 <= rel_btn_x <= 640 + 340 and 250 <= rel_btn_y <= 295:
+            return 'off'
+        return None
 
     t_start = time.time()
     laser_filter = OneEuroFilter2D(t_start, 320.0, 240.0, min_cutoff=0.008, beta=0.006, d_cutoff=1.0)
@@ -367,16 +434,11 @@ def main():
                     audio.scroll_down()
                     nav_engine.record_command('scroll_down')
                 elif s_act == 'light_on':
-                    esp32.set_light(True)
-                    audio.light_turned_on()
-                    nav_engine.record_command('light_on')
+                    handle_light_action('on')
                 elif s_act == 'light_off':
-                    esp32.set_light(False)
-                    audio.light_turned_off()
-                    nav_engine.record_command('light_off')
+                    handle_light_action('off')
                 elif s_act == 'toggle_light':
-                    esp32.toggle_light()
-                    nav_engine.record_command('toggle_light')
+                    handle_light_action('toggle')
                 elif s_act == 'fan_on':
                     audio.fan_turned_on()
                     nav_engine.record_command('fan_on')
@@ -452,31 +514,14 @@ def main():
                 action_fired = False
                 target_screen_x, target_screen_y, dwell_action = nav_engine.update(laser_pt=(anchor_x, anchor_y), euler_angles=(pitch, yaw, roll), gaze_offset=gaze_offset, current_time=current_time)
 
-                def check_light_button_hit(tx: float, ty: float) -> Optional[bool]:
-                    rel_btn_x = tx - center_wx
-                    rel_btn_y = ty - center_wy
-                    if 450 <= rel_btn_x <= 535 and 470 <= rel_btn_y <= 502:
-                        return True
-                    elif 545 <= rel_btn_x <= 630 and 470 <= rel_btn_y <= 502:
-                        return False
-                    return None
-
                 if not is_paused and trigger is not None:
                     light_hit = check_light_button_hit(target_screen_x, target_screen_y)
                     if light_hit is not None:
-                        if light_hit:
-                            esp32.set_light(True)
-                            audio.light_turned_on()
-                            nav_engine.record_command('light_on')
-                            last_action_text = 'EYE CLICK: LIGHT ON'
-                            last_action_color = (255, 255, 255)
-                        else:
-                            esp32.set_light(False)
-                            audio.light_turned_off()
-                            nav_engine.record_command('light_off')
-                            last_action_text = 'EYE CLICK: LIGHT OFF'
-                            last_action_color = (180, 180, 180)
+                        new_lit = handle_light_action(light_hit)
+                        last_action_text = f"EYE-CLICK: LIGHT {('ON' if new_lit else 'OFF')}!"
                         last_action_time = current_time
+                        last_action_color = (255, 255, 255) if new_lit else (180, 180, 180)
+                        click_suppress_until = current_time + 0.1
                         action_fired = True
                     elif trigger == 'left_click':
                         controller.left_click()
@@ -538,18 +583,9 @@ def main():
                 if not is_paused and dwell_action == 'dwell_click':
                     light_hit = check_light_button_hit(target_screen_x, target_screen_y)
                     if light_hit is not None:
-                        if light_hit:
-                            esp32.set_light(True)
-                            audio.light_turned_on()
-                            nav_engine.record_command('light_on')
-                            last_action_text = 'DWELL: LIGHT ON'
-                            last_action_color = (255, 255, 255)
-                        else:
-                            esp32.set_light(False)
-                            audio.light_turned_off()
-                            nav_engine.record_command('light_off')
-                            last_action_text = 'DWELL: LIGHT OFF'
-                            last_action_color = (180, 180, 180)
+                        new_lit = handle_light_action(light_hit)
+                        last_action_text = f"DWELL: LIGHT {('ON' if new_lit else 'OFF')}!"
+                        last_action_color = (255, 255, 255) if new_lit else (180, 180, 180)
                     else:
                         controller.left_click()
                         audio.left_click()
@@ -656,17 +692,25 @@ def main():
             cv2.putText(frame, mot_hud_txt, (450, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, mot_hud_col, 1, cv2.LINE_AA)
             cv2.putText(frame, f'FPS: {fps:.0f}', (cam_w - 75, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, (0, 240, 255), 1, cv2.LINE_AA)
 
+            tog_bg = (24, 52, 38) if hw.light_state else (20, 26, 36)
+            tog_border = (255, 255, 255) if hw.light_state else (55, 75, 95)
+            cv2.rectangle(frame, (340, 456), (495, 504), tog_bg, -1)
+            cv2.rectangle(frame, (340, 456), (495, 504), tog_border, 2)
+            tog_label = '[LIGHT: ON]' if hw.light_state else '[LIGHT: OFF]'
+            tog_col = (255, 255, 255) if hw.light_state else (140, 155, 175)
+            cv2.putText(frame, tog_label, (352, 485), cv2.FONT_HERSHEY_DUPLEX, 0.44, tog_col, 1)
+
             btn_on_bg = (20, 48, 32) if hw.light_state else (18, 24, 34)
             btn_on_border = (0, 255, 120) if hw.light_state else (70, 85, 100)
-            cv2.rectangle(frame, (450, 470), (535, 502), btn_on_bg, -1)
-            cv2.rectangle(frame, (450, 470), (535, 502), btn_on_border, 1)
-            cv2.putText(frame, 'LIGHT ON', (458, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.32, btn_on_border, 1, cv2.LINE_AA)
+            cv2.rectangle(frame, (505, 456), (560, 504), btn_on_bg, -1)
+            cv2.rectangle(frame, (505, 456), (560, 504), btn_on_border, 1)
+            cv2.putText(frame, 'ON', (520, 486), cv2.FONT_HERSHEY_SIMPLEX, 0.38, btn_on_border, 1, cv2.LINE_AA)
 
             btn_off_bg = (42, 20, 26) if not hw.light_state else (18, 24, 34)
             btn_off_border = (0, 60, 255) if not hw.light_state else (70, 85, 100)
-            cv2.rectangle(frame, (545, 470), (630, 502), btn_off_bg, -1)
-            cv2.rectangle(frame, (545, 470), (630, 502), btn_off_border, 1)
-            cv2.putText(frame, 'LIGHT OFF', (552, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.32, btn_off_border, 1, cv2.LINE_AA)
+            cv2.rectangle(frame, (570, 456), (630, 504), btn_off_bg, -1)
+            cv2.rectangle(frame, (570, 456), (630, 504), btn_off_border, 1)
+            cv2.putText(frame, 'OFF', (585, 486), cv2.FONT_HERSHEY_SIMPLEX, 0.38, btn_off_border, 1, cv2.LINE_AA)
 
             cv2.rectangle(frame, (0, 510), (cam_w, cam_h), (12, 16, 24), -1)
             cv2.line(frame, (0, 510), (cam_w, 510), (35, 45, 60), 1)
@@ -739,21 +783,13 @@ def main():
                     audio.speak('Resumed')
                 sensor_log.append((time.strftime('%H:%M:%S'), 'PAUSED' if is_paused else 'RESUMED', (0, 140, 255)))
             elif key in (ord('l'), ord('L')):
-                esp32.toggle_light()
-                new_l_target = not hw.light_state
-                if new_l_target:
-                    audio.light_turned_on()
-                else:
-                    audio.light_turned_off()
-                nav_engine.record_command('toggle_light')
+                new_l_target = handle_light_action('toggle')
                 last_action_text = f"LIGHT {('ON' if new_l_target else 'OFF')}"
                 last_action_time = current_time
                 last_action_color = (255, 255, 255) if new_l_target else (180, 180, 180)
                 sensor_log.append((time.strftime('%H:%M:%S'), f"LIGHT {('ON' if new_l_target else 'OFF')}", last_action_color))
             elif key in (ord('o'), ord('O')):
-                esp32.set_light(False)
-                audio.light_turned_off()
-                nav_engine.record_command('light_off')
+                handle_light_action('off')
                 last_action_text = 'LIGHT OFF'
                 last_action_time = current_time
                 last_action_color = (180, 180, 180)
