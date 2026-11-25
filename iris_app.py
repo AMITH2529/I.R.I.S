@@ -121,7 +121,17 @@ def render_cyber_dashboard(panel: np.ndarray, nav: PointerNavigationEngine, gest
     hw_conn_col = (0, 255, 120) if hw.is_connected else (100, 110, 130)
     cv2.putText(panel, hw_conn_badge, (pw - 105, 206), cv2.FONT_HERSHEY_SIMPLEX, 0.3, hw_conn_col, 1, cv2.LINE_AA)
     state_col = (0, 255, 120) if hw.state == HardwareState.ARMED else (0, 60, 255) if hw.state == HardwareState.DISARMED else (120, 130, 140)
-    cv2.putText(panel, f'State: [{hw.state.value}]  ([A] Arm / [D] Disarm)', (18, 221), cv2.FONT_HERSHEY_SIMPLEX, 0.31, state_col, 1, cv2.LINE_AA)
+    cv2.putText(panel, f'State: [{hw.state.value}]', (18, 221), cv2.FONT_HERSHEY_SIMPLEX, 0.31, state_col, 1, cv2.LINE_AA)
+    arm_s_bg = (20, 52, 34) if hw.state == HardwareState.ARMED else (22, 28, 38)
+    arm_s_bd = (0, 255, 120) if hw.state == HardwareState.ARMED else (70, 85, 100)
+    cv2.rectangle(panel, (215, 209), (272, 224), arm_s_bg, -1)
+    cv2.rectangle(panel, (215, 209), (272, 224), arm_s_bd, 1)
+    cv2.putText(panel, '[ARM]', (226, 220), cv2.FONT_HERSHEY_SIMPLEX, 0.27, arm_s_bd, 1, cv2.LINE_AA)
+    drm_s_bg = (45, 20, 26) if hw.state == HardwareState.DISARMED else (22, 28, 38)
+    drm_s_bd = (0, 60, 255) if hw.state == HardwareState.DISARMED else (70, 85, 100)
+    cv2.rectangle(panel, (278, 209), (345, 224), drm_s_bg, -1)
+    cv2.rectangle(panel, (278, 209), (345, 224), drm_s_bd, 1)
+    cv2.putText(panel, '[DISARM]', (283, 220), cv2.FONT_HERSHEY_SIMPLEX, 0.27, drm_s_bd, 1, cv2.LINE_AA)
 
     is_disarmed = hw.state == HardwareState.DISARMED
     is_armed = hw.state == HardwareState.ARMED
@@ -268,9 +278,9 @@ def main():
             pass
         return center_wx, center_wy
 
-    def handle_light_action(mode: str) -> bool:
+    def handle_ui_action(action: str) -> Tuple[str, Tuple[int, int, int]]:
         telemetry = esp32.get_telemetry()
-        if mode == 'toggle':
+        if action == 'light_toggle':
             new_state = not telemetry.light_state
             esp32.set_light(new_state)
             if new_state:
@@ -278,53 +288,67 @@ def main():
             else:
                 audio.light_turned_off()
             nav_engine.record_command('toggle_light')
-            return new_state
-        elif mode == 'on':
+            return (f"LIGHT {('ON' if new_state else 'OFF')}", (255, 255, 255) if new_state else (180, 180, 180))
+        elif action == 'light_on':
             esp32.set_light(True)
             audio.light_turned_on()
             nav_engine.record_command('light_on')
-            return True
-        elif mode == 'off':
+            return ('LIGHT ON', (255, 255, 255))
+        elif action == 'light_off':
             esp32.set_light(False)
             audio.light_turned_off()
             nav_engine.record_command('light_off')
-            return False
-        return False
+            return ('LIGHT OFF', (180, 180, 180))
+        elif action == 'arm':
+            esp32.arm()
+            audio.arm_system()
+            nav_engine.record_command('arm')
+            return ('SYSTEM ARMED', (0, 255, 120))
+        elif action == 'disarm':
+            esp32.disarm()
+            audio.disarm_system()
+            nav_engine.record_command('disarm')
+            return ('SYSTEM DISARMED', (0, 60, 255))
+        return ('', (0, 255, 120))
+
+    def match_ui_button(rx: float, ry: float) -> Optional[str]:
+        if 456 <= ry <= 504:
+            if 12 <= rx <= 145:
+                return 'arm'
+            elif 155 <= rx <= 295:
+                return 'disarm'
+            elif 340 <= rx <= 495:
+                return 'light_toggle'
+            elif 505 <= rx <= 560:
+                return 'light_on'
+            elif 570 <= rx <= 630:
+                return 'light_off'
+        if show_sidebar:
+            if 209 <= ry <= 224:
+                if 640 + 215 <= rx <= 640 + 272:
+                    return 'arm'
+                elif 640 + 278 <= rx <= 640 + 345:
+                    return 'disarm'
+            elif 250 <= ry <= 295:
+                if 640 + 18 <= rx <= 640 + 195:
+                    return 'light_toggle'
+                elif 640 + 205 <= rx <= 640 + 265:
+                    return 'light_on'
+                elif 640 + 275 <= rx <= 640 + 340:
+                    return 'light_off'
+        return None
 
     def on_mouse_event(event, mx, my, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            if 340 <= mx <= 495 and 456 <= my <= 504:
-                handle_light_action('toggle')
-            elif 505 <= mx <= 560 and 456 <= my <= 504:
-                handle_light_action('on')
-            elif 570 <= mx <= 630 and 456 <= my <= 504:
-                handle_light_action('off')
-            elif 640 + 18 <= mx <= 640 + 195 and 250 <= my <= 295:
-                handle_light_action('toggle')
-            elif 640 + 205 <= mx <= 640 + 265 and 250 <= my <= 295:
-                handle_light_action('on')
-            elif 640 + 275 <= mx <= 640 + 340 and 250 <= my <= 295:
-                handle_light_action('off')
+            act = match_ui_button(mx, my)
+            if act is not None:
+                handle_ui_action(act)
 
     cv2.setMouseCallback(window_name, on_mouse_event)
 
-    def check_light_button_hit(tx: float, ty: float) -> Optional[str]:
+    def check_ui_button_hit(tx: float, ty: float) -> Optional[str]:
         cur_wx, cur_wy = get_window_pos(window_name)
-        rel_btn_x = tx - cur_wx
-        rel_btn_y = ty - cur_wy
-        if 340 <= rel_btn_x <= 495 and 456 <= rel_btn_y <= 504:
-            return 'toggle'
-        elif 505 <= rel_btn_x <= 560 and 456 <= rel_btn_y <= 504:
-            return 'on'
-        elif 570 <= rel_btn_x <= 630 and 456 <= rel_btn_y <= 504:
-            return 'off'
-        elif 640 + 18 <= rel_btn_x <= 640 + 195 and 250 <= rel_btn_y <= 295:
-            return 'toggle'
-        elif 640 + 205 <= rel_btn_x <= 640 + 265 and 250 <= rel_btn_y <= 295:
-            return 'on'
-        elif 640 + 275 <= rel_btn_x <= 640 + 340 and 250 <= rel_btn_y <= 295:
-            return 'off'
-        return None
+        return match_ui_button(tx - cur_wx, ty - cur_wy)
 
     t_start = time.time()
     laser_filter = OneEuroFilter2D(t_start, 320.0, 240.0, min_cutoff=0.008, beta=0.006, d_cutoff=1.0)
@@ -434,11 +458,11 @@ def main():
                     audio.scroll_down()
                     nav_engine.record_command('scroll_down')
                 elif s_act == 'light_on':
-                    handle_light_action('on')
+                    handle_ui_action('light_on')
                 elif s_act == 'light_off':
-                    handle_light_action('off')
+                    handle_ui_action('light_off')
                 elif s_act == 'toggle_light':
-                    handle_light_action('toggle')
+                    handle_ui_action('light_toggle')
                 elif s_act == 'fan_on':
                     audio.fan_turned_on()
                     nav_engine.record_command('fan_on')
@@ -515,12 +539,12 @@ def main():
                 target_screen_x, target_screen_y, dwell_action = nav_engine.update(laser_pt=(anchor_x, anchor_y), euler_angles=(pitch, yaw, roll), gaze_offset=gaze_offset, current_time=current_time)
 
                 if not is_paused and trigger is not None:
-                    light_hit = check_light_button_hit(target_screen_x, target_screen_y)
-                    if light_hit is not None:
-                        new_lit = handle_light_action(light_hit)
-                        last_action_text = f"EYE-CLICK: LIGHT {('ON' if new_lit else 'OFF')}!"
+                    ui_hit = check_ui_button_hit(target_screen_x, target_screen_y)
+                    if ui_hit is not None:
+                        lbl, col = handle_ui_action(ui_hit)
+                        last_action_text = f'EYE-CLICK: {lbl}!'
                         last_action_time = current_time
-                        last_action_color = (255, 255, 255) if new_lit else (180, 180, 180)
+                        last_action_color = col
                         click_suppress_until = current_time + 0.1
                         action_fired = True
                     elif trigger == 'left_click':
@@ -581,11 +605,11 @@ def main():
                     controller.move_to(target_screen_x, target_screen_y)
 
                 if not is_paused and dwell_action == 'dwell_click':
-                    light_hit = check_light_button_hit(target_screen_x, target_screen_y)
-                    if light_hit is not None:
-                        new_lit = handle_light_action(light_hit)
-                        last_action_text = f"DWELL: LIGHT {('ON' if new_lit else 'OFF')}!"
-                        last_action_color = (255, 255, 255) if new_lit else (180, 180, 180)
+                    ui_hit = check_ui_button_hit(target_screen_x, target_screen_y)
+                    if ui_hit is not None:
+                        lbl, col = handle_ui_action(ui_hit)
+                        last_action_text = f'DWELL: {lbl}!'
+                        last_action_color = col
                     else:
                         controller.left_click()
                         audio.left_click()
@@ -692,6 +716,18 @@ def main():
             cv2.putText(frame, mot_hud_txt, (450, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, mot_hud_col, 1, cv2.LINE_AA)
             cv2.putText(frame, f'FPS: {fps:.0f}', (cam_w - 75, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, (0, 240, 255), 1, cv2.LINE_AA)
 
+            arm_bg = (20, 56, 36) if hw.state == HardwareState.ARMED else (20, 26, 36)
+            arm_bd = (0, 255, 120) if hw.state == HardwareState.ARMED else (65, 85, 105)
+            cv2.rectangle(frame, (12, 456), (145, 504), arm_bg, -1)
+            cv2.rectangle(frame, (12, 456), (145, 504), arm_bd, 2)
+            cv2.putText(frame, '[ARM]', (45, 486), cv2.FONT_HERSHEY_DUPLEX, 0.48, arm_bd, 1)
+
+            drm_bg = (48, 20, 26) if hw.state == HardwareState.DISARMED else (20, 26, 36)
+            drm_bd = (0, 60, 255) if hw.state == HardwareState.DISARMED else (65, 85, 105)
+            cv2.rectangle(frame, (155, 456), (295, 504), drm_bg, -1)
+            cv2.rectangle(frame, (155, 456), (295, 504), drm_bd, 2)
+            cv2.putText(frame, '[DISARM]', (178, 486), cv2.FONT_HERSHEY_DUPLEX, 0.48, drm_bd, 1)
+
             tog_bg = (24, 52, 38) if hw.light_state else (20, 26, 36)
             tog_border = (255, 255, 255) if hw.light_state else (55, 75, 95)
             cv2.rectangle(frame, (340, 456), (495, 504), tog_bg, -1)
@@ -783,17 +819,17 @@ def main():
                     audio.speak('Resumed')
                 sensor_log.append((time.strftime('%H:%M:%S'), 'PAUSED' if is_paused else 'RESUMED', (0, 140, 255)))
             elif key in (ord('l'), ord('L')):
-                new_l_target = handle_light_action('toggle')
-                last_action_text = f"LIGHT {('ON' if new_l_target else 'OFF')}"
+                lbl, col = handle_ui_action('light_toggle')
+                last_action_text = lbl
                 last_action_time = current_time
-                last_action_color = (255, 255, 255) if new_l_target else (180, 180, 180)
-                sensor_log.append((time.strftime('%H:%M:%S'), f"LIGHT {('ON' if new_l_target else 'OFF')}", last_action_color))
+                last_action_color = col
+                sensor_log.append((time.strftime('%H:%M:%S'), lbl, col))
             elif key in (ord('o'), ord('O')):
-                handle_light_action('off')
-                last_action_text = 'LIGHT OFF'
+                lbl, col = handle_ui_action('light_off')
+                last_action_text = lbl
                 last_action_time = current_time
-                last_action_color = (180, 180, 180)
-                sensor_log.append((time.strftime('%H:%M:%S'), 'LIGHT OFF', (180, 180, 180)))
+                last_action_color = col
+                sensor_log.append((time.strftime('%H:%M:%S'), lbl, col))
             elif key in (ord('v'), ord('V')):
                 speech_enabled = not speech_enabled
                 if speech_enabled:
