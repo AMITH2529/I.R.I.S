@@ -237,8 +237,8 @@ def main():
     lighting = LightingCompensator(clip_limit=2.0, tile_grid_size=(8, 8))
     pose_estimator = HeadPoseEstimator()
     iris_detector = IrisGazeDetector()
-    gesture_engine = GestureEngine(wink_hold_time=0.2, double_click_hold_time=0.55, click_cooldown=0.3, scroll_pitch_deadzone=8.0, scroll_hold_time=0.15, asymmetry_threshold=0.25, enable_blink_click=True, blink_click_hold_time=0.28, closure_threshold=0.25)
-    nav_engine = PointerNavigationEngine(screen_w=screen_w, screen_h=screen_h, default_method=PointerNavigationEngine.METHOD_ABSOLUTE_ANCHOR, base_sensitivity=1.0, enable_dwell_click=False, dwell_time=0.65, dwell_radius=22.0)
+    gesture_engine = GestureEngine(wink_hold_time=0.15, double_click_hold_time=0.55, click_cooldown=0.25, scroll_pitch_deadzone=8.0, scroll_hold_time=0.15, asymmetry_threshold=0.25, enable_blink_click=True, blink_click_hold_time=0.22, closure_threshold=0.20)
+    nav_engine = PointerNavigationEngine(screen_w=screen_w, screen_h=screen_h, default_method=PointerNavigationEngine.METHOD_ABSOLUTE_ANCHOR, base_sensitivity=1.0, enable_dwell_click=True, dwell_time=0.65, dwell_radius=22.0)
     esp32 = ESP32Controller(port='COM5', baudrate=115200)
     esp32.start()
     tracker = FastFaceMeshTracker(model_yunet_path=YUNET_PATH, model_facemesh_path=FACEMESH_PATH, input_size=(640, 480), redetect_interval=90)
@@ -266,17 +266,26 @@ def main():
     except Exception:
         pass
 
-    def get_window_pos(win_name: str) -> Tuple[int, int]:
+    def screen_to_canvas(win_name: str, sx: float, sy: float) -> Tuple[float, float]:
+        canvas_w = cam_w + sidebar_w if show_sidebar else cam_w
         try:
             import ctypes
+            class POINT(ctypes.Structure):
+                _fields_ = [('x', ctypes.c_long), ('y', ctypes.c_long)]
             hwnd = ctypes.windll.user32.FindWindowW(None, win_name)
             if hwnd:
+                pt = POINT(0, 0)
+                ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(pt))
                 rect = (ctypes.c_long * 4)()
-                ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
-                return int(rect[0]), int(rect[1])
+                ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(rect))
+                cw = max(1, int(rect[2] - rect[0]))
+                ch = max(1, int(rect[3] - rect[1]))
+                rx = (sx - pt.x) * (canvas_w / float(cw))
+                ry = (sy - pt.y) * (total_h / float(ch))
+                return rx, ry
         except Exception:
             pass
-        return center_wx, center_wy
+        return sx - center_wx, sy - center_wy
 
     def handle_ui_action(action: str) -> Tuple[str, Tuple[int, int, int]]:
         telemetry = esp32.get_telemetry()
@@ -347,8 +356,8 @@ def main():
     cv2.setMouseCallback(window_name, on_mouse_event)
 
     def check_ui_button_hit(tx: float, ty: float) -> Optional[str]:
-        cur_wx, cur_wy = get_window_pos(window_name)
-        return match_ui_button(tx - cur_wx, ty - cur_wy)
+        rx, ry = screen_to_canvas(window_name, tx, ty)
+        return match_ui_button(rx, ry)
 
     t_start = time.time()
     laser_filter = OneEuroFilter2D(t_start, 320.0, 240.0, min_cutoff=0.008, beta=0.006, d_cutoff=1.0)
