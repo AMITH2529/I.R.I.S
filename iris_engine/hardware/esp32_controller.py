@@ -35,7 +35,7 @@ class ESP32Controller:
         return self._serial.send_command('CMD: TEST_LEDS')
 
     def set_light(self, on: bool) -> bool:
-        cmd = 'CMD: LIGHT: ON' if on else 'CMD: LIGHT: OFF'
+        cmd = 'CMD: ALL_ON' if on else 'CMD: ALL_OFF'
         return self._serial.send_command(cmd)
 
     def toggle_light(self) -> bool:
@@ -73,6 +73,8 @@ class ESP32Controller:
                 self._telemetry.motion_alert = False
                 self._telemetry.last_event_text = 'ESP32 Offline'
             self._telemetry.last_event_time = now
+        if connected:
+            self._serial.send_command('CMD: ARM')
 
     def _parse_line(self, line: str) -> None:
         line = line.strip()
@@ -95,13 +97,13 @@ class ESP32Controller:
                 self._telemetry.last_event_time = now
                 if self.on_alert_triggered:
                     self.on_alert_triggered('STATE', 'DISARMED')
-            elif line == 'DEVICE: LIGHT: ON' or line == 'LIGHT: ON':
+            elif line in ('DEVICE: LIGHT: ON', 'LIGHT: ON', 'DEVICE: ALL_LEDS: ON'):
                 self._telemetry.light_state = True
                 self._telemetry.last_event_text = 'LIGHT TURNED ON'
                 self._telemetry.last_event_time = now
                 if self.on_alert_triggered:
                     self.on_alert_triggered('DEVICE', 'LIGHT_ON')
-            elif line == 'DEVICE: LIGHT: OFF' or line == 'LIGHT: OFF':
+            elif line in ('DEVICE: LIGHT: OFF', 'LIGHT: OFF', 'DEVICE: ALL_LEDS: OFF'):
                 self._telemetry.light_state = False
                 self._telemetry.last_event_text = 'LIGHT TURNED OFF'
                 self._telemetry.last_event_time = now

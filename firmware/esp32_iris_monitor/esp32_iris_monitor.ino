@@ -62,16 +62,18 @@ void setBlueLeds(bool state) {
 }
 
 void updateLedOutputs() {
-  if (currentState == STATE_DISARMED) {
+  if (lightState) {
     setRedLeds(true);
-    setGreenLeds(false);
-    setBlueLeds(false);
-    digitalWrite(PIN_ONBOARD, LOW);
+    setGreenLeds(true);
+    setBlueLeds(true);
+    digitalWrite(PIN_LIGHT, HIGH);
+    digitalWrite(PIN_ONBOARD, HIGH);
   } else {
     setRedLeds(false);
-    setGreenLeds(true);
-    setBlueLeds(proximityAlertActive);
-    digitalWrite(PIN_ONBOARD, HIGH);
+    setGreenLeds(false);
+    setBlueLeds(false);
+    digitalWrite(PIN_LIGHT, LOW);
+    digitalWrite(PIN_ONBOARD, currentState == STATE_ARMED ? HIGH : LOW);
   }
 }
 
@@ -305,11 +307,12 @@ void setup() {
     digitalWrite(initLeds[i], LOW);
   }
 
-  currentState = STATE_DISARMED;
+  currentState = STATE_ARMED;
+  lightState = false;
   proximityAlertActive = false;
   updateLedOutputs();
 
-  Serial.println("SYSTEM: DISARMED");
+  Serial.println("SYSTEM: ARMED");
 }
 
 void loop() {
@@ -361,17 +364,19 @@ void loop() {
       transitionToArmed("SERIAL_CMD");
     } else if (upperCmd == "CMD: DISARM" || upperCmd == "DISARM") {
       transitionToDisarmed("SERIAL_CMD");
-    } else if (upperCmd == "CMD: LIGHT: ON" || upperCmd == "LIGHT: ON" || upperCmd == "CMD: LIGHT ON" || upperCmd == "LIGHT ON" || upperCmd == "LIGHT_ON") {
-      digitalWrite(PIN_LIGHT, HIGH);
+    } else if (upperCmd == "CMD: LIGHT: ON" || upperCmd == "LIGHT: ON" || upperCmd == "CMD: LIGHT ON" || upperCmd == "LIGHT ON" || upperCmd == "LIGHT_ON" || upperCmd == "CMD: ALL_ON" || upperCmd == "CMD: ALL: ON" || upperCmd == "ALL_ON" || upperCmd == "ALL ON") {
       lightState = true;
+      setAllLeds(true);
       Serial.println("DEVICE: LIGHT: ON");
-    } else if (upperCmd == "CMD: LIGHT: OFF" || upperCmd == "LIGHT: OFF" || upperCmd == "CMD: LIGHT OFF" || upperCmd == "LIGHT OFF" || upperCmd == "LIGHT_OFF") {
-      digitalWrite(PIN_LIGHT, LOW);
+    } else if (upperCmd == "CMD: LIGHT: OFF" || upperCmd == "LIGHT: OFF" || upperCmd == "CMD: LIGHT OFF" || upperCmd == "LIGHT OFF" || upperCmd == "LIGHT_OFF" || upperCmd == "CMD: ALL_OFF" || upperCmd == "CMD: ALL: OFF" || upperCmd == "ALL_OFF" || upperCmd == "ALL OFF") {
       lightState = false;
+      setAllLeds(false);
+      updateLedOutputs();
       Serial.println("DEVICE: LIGHT: OFF");
     } else if (upperCmd == "CMD: LIGHT: TOGGLE" || upperCmd == "LIGHT: TOGGLE" || upperCmd == "CMD: LIGHT TOGGLE" || upperCmd == "LIGHT TOGGLE" || upperCmd == "TOGGLE_LIGHT" || upperCmd == "CMD: TOGGLE") {
       lightState = !lightState;
-      digitalWrite(PIN_LIGHT, lightState ? HIGH : LOW);
+      setAllLeds(lightState);
+      if (!lightState) updateLedOutputs();
       if (lightState) {
         Serial.println("DEVICE: LIGHT: ON");
       } else {
@@ -390,13 +395,6 @@ void loop() {
       }
     } else if (upperCmd == "CMD: TEST_LEDS" || upperCmd == "CMD: LED_TEST" || upperCmd == "TEST_LEDS" || upperCmd == "TEST") {
       runLedTest();
-    } else if (upperCmd == "CMD: ALL_ON" || upperCmd == "CMD: ALL: ON" || upperCmd == "ALL_ON" || upperCmd == "ALL ON") {
-      setAllLeds(true);
-      Serial.println("DEVICE: ALL_LEDS: ON");
-    } else if (upperCmd == "CMD: ALL_OFF" || upperCmd == "CMD: ALL: OFF" || upperCmd == "ALL_OFF" || upperCmd == "ALL OFF") {
-      setAllLeds(false);
-      updateLedOutputs();
-      Serial.println("DEVICE: ALL_LEDS: OFF");
     } else if (upperCmd == "CMD: DIAG" || upperCmd == "CMD: DIAGNOSTIC" || upperCmd == "DIAG") {
       runFullDiagnostic();
     }

@@ -121,17 +121,7 @@ def render_cyber_dashboard(panel: np.ndarray, nav: PointerNavigationEngine, gest
     hw_conn_col = (0, 255, 120) if hw.is_connected else (100, 110, 130)
     cv2.putText(panel, hw_conn_badge, (pw - 105, 206), cv2.FONT_HERSHEY_SIMPLEX, 0.3, hw_conn_col, 1, cv2.LINE_AA)
     state_col = (0, 255, 120) if hw.state == HardwareState.ARMED else (0, 60, 255) if hw.state == HardwareState.DISARMED else (120, 130, 140)
-    cv2.putText(panel, f'State: [{hw.state.value}]', (18, 221), cv2.FONT_HERSHEY_SIMPLEX, 0.31, state_col, 1, cv2.LINE_AA)
-    arm_s_bg = (20, 52, 34) if hw.state == HardwareState.ARMED else (22, 28, 38)
-    arm_s_bd = (0, 255, 120) if hw.state == HardwareState.ARMED else (70, 85, 100)
-    cv2.rectangle(panel, (215, 209), (272, 224), arm_s_bg, -1)
-    cv2.rectangle(panel, (215, 209), (272, 224), arm_s_bd, 1)
-    cv2.putText(panel, '[ARM]', (226, 220), cv2.FONT_HERSHEY_SIMPLEX, 0.27, arm_s_bd, 1, cv2.LINE_AA)
-    drm_s_bg = (45, 20, 26) if hw.state == HardwareState.DISARMED else (22, 28, 38)
-    drm_s_bd = (0, 60, 255) if hw.state == HardwareState.DISARMED else (70, 85, 100)
-    cv2.rectangle(panel, (278, 209), (345, 224), drm_s_bg, -1)
-    cv2.rectangle(panel, (278, 209), (345, 224), drm_s_bd, 1)
-    cv2.putText(panel, '[DISARM]', (283, 220), cv2.FONT_HERSHEY_SIMPLEX, 0.27, drm_s_bd, 1, cv2.LINE_AA)
+    cv2.putText(panel, f'State: [{hw.state.value}] (Auto-Armed)', (18, 221), cv2.FONT_HERSHEY_SIMPLEX, 0.31, state_col, 1, cv2.LINE_AA)
 
     is_disarmed = hw.state == HardwareState.DISARMED
     is_armed = hw.state == HardwareState.ARMED
@@ -322,29 +312,19 @@ def main():
 
     def match_ui_button(rx: float, ry: float) -> Optional[str]:
         if 456 <= ry <= 504:
-            if 12 <= rx <= 145:
-                return 'arm'
-            elif 155 <= rx <= 295:
-                return 'disarm'
-            elif 340 <= rx <= 495:
+            if 340 <= rx <= 495:
                 return 'light_toggle'
             elif 505 <= rx <= 560:
                 return 'light_on'
             elif 570 <= rx <= 630:
                 return 'light_off'
-        if show_sidebar:
-            if 209 <= ry <= 224:
-                if 640 + 215 <= rx <= 640 + 272:
-                    return 'arm'
-                elif 640 + 278 <= rx <= 640 + 345:
-                    return 'disarm'
-            elif 250 <= ry <= 295:
-                if 640 + 18 <= rx <= 640 + 195:
-                    return 'light_toggle'
-                elif 640 + 205 <= rx <= 640 + 265:
-                    return 'light_on'
-                elif 640 + 275 <= rx <= 640 + 340:
-                    return 'light_off'
+        if show_sidebar and 250 <= ry <= 295:
+            if 640 + 18 <= rx <= 640 + 195:
+                return 'light_toggle'
+            elif 640 + 205 <= rx <= 640 + 265:
+                return 'light_on'
+            elif 640 + 275 <= rx <= 640 + 340:
+                return 'light_off'
         return None
 
     def on_mouse_event(event, mx, my, flags, param):
@@ -382,6 +362,7 @@ def main():
 
     face_lost_start = 0.0
     face_lost_notified = False
+    auto_armed_sent = False
 
     print('[READY] I.R.I.S. Engine Online.')
     print('        Controls: [SPACE] Pause | [C] Recenter | [L] Light Toggle | [W] Dwell | [M] Mode | [T] Sidebar | [ESC] Exit\n')
@@ -677,6 +658,10 @@ def main():
             ripples = active_ripples
 
             hw = esp32.get_telemetry()
+            if hw.is_connected and not auto_armed_sent:
+                esp32.arm()
+                auto_armed_sent = True
+                sensor_log.append((time.strftime('%H:%M:%S'), 'AUTO-ARMED ON STARTUP', (0, 255, 120)))
             if hw.proximity_alert:
                 last_action_text = f'PROXIMITY ALERT ({hw.distance_cm:.1f}cm)!'
                 last_action_time = current_time
@@ -724,18 +709,6 @@ def main():
             mot_hud_txt = f'MPU: {g_mag:.2f}g'
             cv2.putText(frame, mot_hud_txt, (450, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, mot_hud_col, 1, cv2.LINE_AA)
             cv2.putText(frame, f'FPS: {fps:.0f}', (cam_w - 75, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.32, (0, 240, 255), 1, cv2.LINE_AA)
-
-            arm_bg = (20, 56, 36) if hw.state == HardwareState.ARMED else (20, 26, 36)
-            arm_bd = (0, 255, 120) if hw.state == HardwareState.ARMED else (65, 85, 105)
-            cv2.rectangle(frame, (12, 456), (145, 504), arm_bg, -1)
-            cv2.rectangle(frame, (12, 456), (145, 504), arm_bd, 2)
-            cv2.putText(frame, '[ARM]', (45, 486), cv2.FONT_HERSHEY_DUPLEX, 0.48, arm_bd, 1)
-
-            drm_bg = (48, 20, 26) if hw.state == HardwareState.DISARMED else (20, 26, 36)
-            drm_bd = (0, 60, 255) if hw.state == HardwareState.DISARMED else (65, 85, 105)
-            cv2.rectangle(frame, (155, 456), (295, 504), drm_bg, -1)
-            cv2.rectangle(frame, (155, 456), (295, 504), drm_bd, 2)
-            cv2.putText(frame, '[DISARM]', (178, 486), cv2.FONT_HERSHEY_DUPLEX, 0.48, drm_bd, 1)
 
             tog_bg = (24, 52, 38) if hw.light_state else (20, 26, 36)
             tog_border = (255, 255, 255) if hw.light_state else (55, 75, 95)
